@@ -1,6 +1,7 @@
 package mold
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"io"
@@ -24,22 +25,24 @@ type Layout interface {
 	Render(w io.Writer, view string, data any) error
 }
 
-// New creates a new layout using fs as the underlying filesystem.
+// New creates a new Layout using fs as the underlying filesystem.
 func New(fs fs.FS, layoutFile string) (Layout, error) {
 	f, err := readFile(fs, layoutFile)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 
-	l, err := template.New("layout").Parse(f)
+	t := &tplLayout{fs: fs}
+	funcs := map[string]any{"partial": t.renderPartial}
+
+	layout, err := template.New("layout").Funcs(funcs).Parse(f)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 
-	return &tplLayout{
-		l:  l,
-		fs: fs,
-	}, nil
+	t.l = layout
+
+	return t, nil
 }
 
 type tplLayout struct {
@@ -49,7 +52,7 @@ type tplLayout struct {
 
 // Render implements Layout.
 func (t *tplLayout) Render(w io.Writer, view string, data any) error {
-	l, err := t.parseView(t.fs, view)
+	l, err := t.parseView(view)
 	if err != nil {
 		return err
 	}
@@ -65,26 +68,13 @@ func (t *tplLayout) Render(w io.Writer, view string, data any) error {
 	return nil
 }
 
-func readFile(fs fs.FS, name string) (string, error) {
-	f, err := fs.Open(name)
-	if err != nil {
-		return "", fmt.Errorf("error reading file: %w", err)
-	}
-	b, err := io.ReadAll(f)
-	if err != nil {
-		return "", fmt.Errorf("error reading file: %w", err)
-	}
-
-	return string(b), nil
-}
-
-func (t *tplLayout) parseView(fs fs.FS, name string) (*template.Template, error) {
+func (t *tplLayout) parseView(name string) (*template.Template, error) {
 	l, err := t.l.Clone()
 	if err != nil {
 		return nil, fmt.Errorf("error cloning layout for view '%s': %w", name, err)
 	}
 
-	f, err := readFile(fs, name)
+	f, err := readFile(t.fs, name)
 	if err != nil {
 		return nil, fmt.Errorf("error reading view '%s': %w", name, err)
 	}
@@ -99,4 +89,40 @@ func (t *tplLayout) parseView(fs fs.FS, name string) (*template.Template, error)
 	}
 
 	return l, nil
+}
+
+func (t *tplLayout) renderPartial(name string, params ...any) (template.HTML, error) {
+	var data any
+	if len(params) > 0 {
+		data = params[0]
+	}
+
+	f, err := readFile(t.fs, name)
+	if err != nil {
+		return "", fmt.Errorf("error rendering partial '%s': %w", name, err)
+	}
+	tpl, err := template.New("partial").Parse(f)
+	if err != nil {
+		return "", fmt.Errorf("error rendering partial '%s': %w", name, err)
+	}
+
+	var buf bytes.Buffer
+	if err := tpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("error rendering partial '%s': %w", name, err)
+	}
+
+	return template.HTML(buf.String()), nil
+}
+
+func readFile(fs fs.FS, name string) (string, error) {
+	f, err := fs.Open(name)
+	if err != nil {
+		return "", fmt.Errorf("error reading file: %w", err)
+	}
+	b, err := io.ReadAll(f)
+	if err != nil {
+		return "", fmt.Errorf("error reading file: %w", err)
+	}
+
+	return string(b), nil
 }

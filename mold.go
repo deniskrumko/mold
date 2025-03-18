@@ -12,16 +12,16 @@ import (
 // It encapsulates the header and body and inserts the dynamic content of a view
 // into a designated area.
 type Layout interface {
-	// Render executes the layout template, merging it with the specified view template and data,
+	// Render executes the layout template, merging it with the specified view template,
 	// then writes the resulting HTML to the provided io.Writer.
 	//
 	// Parameters:
-	//   w: The io.Writer to which the rendered HTML will be written.
+	//   w: The writer to which the rendered HTML will be written.
 	//   view: The path of the view template whose content will be injected into the layout.
 	//   data: The data to be made available to both the layout and view templates during rendering.
 	//
 	// Returns:
-	//   An error, if any, that occurred during template execution or writing to the io.Writer.
+	//   An error, if any, that occurred during template execution or writing to the writer.
 	Render(w io.Writer, view string, data any) error
 }
 

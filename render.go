@@ -2,22 +2,29 @@ package mold
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
 )
 
-func newLayout(fsys fs.FS, layout string, options *Options) (Layout, error) {
-	f, err := readFile(fsys, layout)
-	if err != nil {
-		return nil, fmt.Errorf("error creating new layout: %w", err)
-	}
+//go:embed layout.html
+var defaultLayout string
 
+func newLayout(fsys fs.FS, options *Options) (Layout, error) {
+	file := defaultLayout
 	t := &tplLayout{fs: fsys, views: map[string]*template.Template{}}
 
 	if options != nil {
 		t.cache = !options.NoCache
+		if options.Layout != "" {
+			f, err := readFile(fsys, options.Layout)
+			if err != nil {
+				return nil, fmt.Errorf("error creating new layout: %w", err)
+			}
+			file = f
+		}
 		if options.Root != "" {
 			sub, err := fs.Sub(fsys, options.Root)
 			if err != nil {
@@ -29,10 +36,12 @@ func newLayout(fsys fs.FS, layout string, options *Options) (Layout, error) {
 
 	funcs := map[string]any{"partial": t.renderPartial}
 
-	t.l, err = template.New("layout").Funcs(funcs).Parse(f)
+	l, err := template.New("layout").Funcs(funcs).Parse(file)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
+
+	t.l = l
 
 	return t, nil
 }

@@ -24,6 +24,8 @@ type Layout interface {
 
 // Options is the configuration options for creation a new Layout.
 type Options struct {
+	// Path to the layout file.
+	Layout string
 	// Root directory for views and partials.
 	// NOTE: this is not applicable to the layout path.
 	Root string
@@ -32,13 +34,12 @@ type Options struct {
 	NoCache bool
 }
 
-// New creates a new Layout with the specified layout template
-// and fs as the underlying filesystem.
-func New(fs fs.FS, layout string) (Layout, error) {
-	return newLayout(fs, layout, nil)
+// New creates a new Layout with fs as the underlying filesystem.
+func New(fs fs.FS) (Layout, error) {
+	return newLayout(fs, nil)
 }
 
 // NewWithOptions is like [New] with support for options.
-func NewWithOptions(fs fs.FS, layout string, options Options) (Layout, error) {
-	return newLayout(fs, layout, &options)
+func NewWithOptions(fs fs.FS, options Options) (Layout, error) {
+	return newLayout(fs, &options)
 }

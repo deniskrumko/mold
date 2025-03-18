@@ -8,12 +8,11 @@ import (
 	"github.com/abiosoft/mold"
 )
 
-//go:embed layouts pages
-var staticDir embed.FS
+//go:embed *.html partials
+var dir embed.FS
 
 func main() {
-	options := mold.Options{Root: "pages"}
-	layout, err := mold.NewWithOptions(staticDir, "layouts/default.html", options)
+	layout, err := mold.New(dir)
 	if err != nil {
 		log.Fatal(err)
 	}

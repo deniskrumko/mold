@@ -1,6 +1,7 @@
 package mold
 
 import (
+	"html/template"
 	"io"
 	"io/fs"
 )
@@ -30,8 +31,10 @@ type Options struct {
 	// NOTE: this is not applicable to the layout path.
 	Root string
 	// If set to true, templates would be read from disk and parsed on each request.
-	// Useful for quick feedback during development, otherwise should left as false.
+	// Useful for quick feedback during development, otherwise should be left as false.
 	NoCache bool
+	// FuncMap is the [template.FuncMap] that is available for use in the templates.
+	FuncMap template.FuncMap
 }
 
 // New creates a new Layout with fs as the underlying filesystem.

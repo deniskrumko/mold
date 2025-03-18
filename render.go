@@ -33,6 +33,12 @@ func newLayout(fsys fs.FS, options *Options) (Layout, error) {
 			}
 			t.fs = sub
 		}
+		for k, f := range options.FuncMap {
+			if k == "partial" {
+				continue
+			}
+			funcs[k] = f
+		}
 	}
 
 	l, err := template.New("layout").Funcs(funcs).Parse(file)

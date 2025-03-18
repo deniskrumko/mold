@@ -25,22 +25,52 @@ type Layout interface {
 	Render(w io.Writer, view string, data any) error
 }
 
-// New creates a new Layout using fs as the underlying filesystem.
-func New(fs fs.FS, layoutFile string) (Layout, error) {
-	f, err := readFile(fs, layoutFile)
+// Options is the configuration options for creation a new Layout.
+type Options struct {
+	// Root directory for views and partials.
+	// NOTE: this is not applicable to layouts.
+	Root string
+	// If set to true, templates would be read from disk and parsed on each request.
+	// Useful for quick feedback during development, otherwise should be set to false.
+	NoCache bool
+}
+
+// New creates a new Layout with the specified layout template
+// and fs as the underlying filesystem.
+func New(fs fs.FS, layout string) (Layout, error) {
+	return newTemplate(fs, layout, nil)
+}
+
+// NewWithOptions is like [New] with support for options.
+func NewWithOptions(fs fs.FS, layout string, options Options) (Layout, error) {
+	return newTemplate(fs, layout, &options)
+}
+
+func newTemplate(fsys fs.FS, layout string, options *Options) (Layout, error) {
+	f, err := readFile(fsys, layout)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 
-	t := &tplLayout{fs: fs}
+	t := &tplLayout{fs: fsys}
+
+	if options != nil {
+		t.cache = !options.NoCache
+		if options.Root != "" {
+			sub, err := fs.Sub(fsys, options.Root)
+			if err != nil {
+				return nil, fmt.Errorf("error setting subdirectory '%s': %w", options.Root, err)
+			}
+			t.fs = sub
+		}
+	}
+
 	funcs := map[string]any{"partial": t.renderPartial}
 
-	layout, err := template.New("layout").Funcs(funcs).Parse(f)
+	t.l, err = template.New("layout").Funcs(funcs).Parse(f)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
-
-	t.l = layout
 
 	return t, nil
 }
@@ -48,6 +78,8 @@ func New(fs fs.FS, layoutFile string) (Layout, error) {
 type tplLayout struct {
 	fs fs.FS
 	l  *template.Template
+
+	cache bool
 }
 
 // Render implements Layout.

@@ -35,8 +35,12 @@ type Options struct {
 }
 
 // New creates a new Layout with fs as the underlying filesystem.
-func New(fs fs.FS) (Layout, error) {
-	return newLayout(fs, nil)
+func New(fs fs.FS) Layout {
+	l, err := newLayout(fs, nil)
+	if err != nil {
+		panic(err) // this should never happen
+	}
+	return l
 }
 
 // NewWithOptions is like [New] with support for options.

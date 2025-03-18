@@ -13,9 +13,10 @@ import (
 var defaultLayout string
 
 func newLayout(fsys fs.FS, options *Options) (Layout, error) {
-	file := defaultLayout
 	t := &tplLayout{fs: fsys, views: map[string]*template.Template{}}
+	funcs := map[string]any{"partial": t.renderPartial}
 
+	file := defaultLayout
 	if options != nil {
 		t.cache = !options.NoCache
 		if options.Layout != "" {
@@ -33,8 +34,6 @@ func newLayout(fsys fs.FS, options *Options) (Layout, error) {
 			t.fs = sub
 		}
 	}
-
-	funcs := map[string]any{"partial": t.renderPartial}
 
 	l, err := template.New("layout").Funcs(funcs).Parse(file)
 	if err != nil {

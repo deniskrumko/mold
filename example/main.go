@@ -10,13 +10,9 @@ import (
 
 //go:embed *.html partials
 var dir embed.FS
+var layout = mold.New(dir)
 
 func main() {
-	layout, err := mold.New(dir)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	if err := layout.Render(os.Stdout, "index.html", nil); err != nil {
 		log.Fatal(err)
 	}

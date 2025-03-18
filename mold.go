@@ -28,31 +28,31 @@ type Layout interface {
 // Options is the configuration options for creation a new Layout.
 type Options struct {
 	// Root directory for views and partials.
-	// NOTE: this is not applicable to layouts.
+	// NOTE: this is not applicable to the layout path.
 	Root string
 	// If set to true, templates would be read from disk and parsed on each request.
-	// Useful for quick feedback during development, otherwise should be set to false.
+	// Useful for quick feedback during development, otherwise should left as false.
 	NoCache bool
 }
 
 // New creates a new Layout with the specified layout template
 // and fs as the underlying filesystem.
 func New(fs fs.FS, layout string) (Layout, error) {
-	return newTemplate(fs, layout, nil)
+	return newLayout(fs, layout, nil)
 }
 
 // NewWithOptions is like [New] with support for options.
 func NewWithOptions(fs fs.FS, layout string, options Options) (Layout, error) {
-	return newTemplate(fs, layout, &options)
+	return newLayout(fs, layout, &options)
 }
 
-func newTemplate(fsys fs.FS, layout string, options *Options) (Layout, error) {
+func newLayout(fsys fs.FS, layout string, options *Options) (Layout, error) {
 	f, err := readFile(fsys, layout)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 
-	t := &tplLayout{fs: fsys}
+	t := &tplLayout{fs: fsys, views: map[string]*template.Template{}}
 
 	if options != nil {
 		t.cache = !options.NoCache
@@ -80,6 +80,7 @@ type tplLayout struct {
 	l  *template.Template
 
 	cache bool
+	views map[string]*template.Template
 }
 
 // Render implements Layout.
@@ -101,6 +102,12 @@ func (t *tplLayout) Render(w io.Writer, view string, data any) error {
 }
 
 func (t *tplLayout) parseView(name string) (*template.Template, error) {
+	if t.cache {
+		if l, ok := t.views[name]; ok {
+			return l, nil
+		}
+	}
+
 	l, err := t.l.Clone()
 	if err != nil {
 		return nil, fmt.Errorf("error cloning layout for view '%s': %w", name, err)
@@ -119,6 +126,8 @@ func (t *tplLayout) parseView(name string) (*template.Template, error) {
 	if l.Lookup("head") == nil {
 		l.New("head").Parse("")
 	}
+
+	t.views[name] = l
 
 	return l, nil
 }

@@ -22,7 +22,7 @@ type Layout interface {
 	Render(w io.Writer, view string, data any) error
 }
 
-// Options is the configuration options for creation a new Layout.
+// Options is the configuration options for a new Layout.
 type Options struct {
 	// Path to the layout file.
 	Layout string

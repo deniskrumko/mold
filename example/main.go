@@ -12,16 +12,17 @@ import (
 var staticDir embed.FS
 
 func main() {
-	layout, err := mold.New(staticDir, "layouts/default.html")
+	options := mold.Options{Root: "pages"}
+	layout, err := mold.NewWithOptions(staticDir, "layouts/default.html", options)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := layout.Render(os.Stdout, "pages/index.html", nil); err != nil {
+	if err := layout.Render(os.Stdout, "index.html", nil); err != nil {
 		log.Fatal(err)
 	}
 
-	if err := layout.Render(os.Stdout, "pages/hello.html", nil); err != nil {
+	if err := layout.Render(os.Stdout, "hello.html", nil); err != nil {
 		log.Fatal(err)
 	}
 }

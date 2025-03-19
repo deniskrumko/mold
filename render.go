@@ -7,50 +7,41 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
+	"path/filepath"
+	"strings"
 )
 
-//go:embed layout.html
-var defaultLayout string
+var (
+	//go:embed layout.html
+	defaultLayout string
+
+	defaultExts = []string{"html", "gohtml", "tpl", "tmpl"}
+)
 
 func newLayout(fsys fs.FS, options *Options) (Layout, error) {
+	opt, err := parseOptions(fsys, options)
+	if err != nil {
+		return nil, fmt.Errorf("error creating new layout: %w", err)
+	}
 	t := &tplLayout{
-		fs:    fsys,
+		fs:    opt.fs,
+		cache: opt.cache,
 		views: map[string]*template.Template{},
 		parts: map[string]*template.Template{},
 	}
-	funcs := map[string]any{"partial": t.renderPartial}
+	// add partial renderer
+	opt.funcMap["partial"] = t.renderPartial
 
-	file := defaultLayout
-	if options != nil {
-		t.cache = !options.NoCache
-		if options.Layout != "" {
-			f, err := readFile(fsys, options.Layout)
-			if err != nil {
-				return nil, fmt.Errorf("error creating new layout: %w", err)
-			}
-			file = f
-		}
-		if options.Root != "" {
-			sub, err := fs.Sub(fsys, options.Root)
-			if err != nil {
-				return nil, fmt.Errorf("error setting subdirectory '%s': %w", options.Root, err)
-			}
-			t.fs = sub
-		}
-		for k, f := range options.FuncMap {
-			if k == "partial" {
-				continue
-			}
-			funcs[k] = f
-		}
-	}
-
-	l, err := template.New("layout").Funcs(funcs).Parse(file)
+	// parse layout template
+	t.l, err = template.New("layout").Funcs(opt.funcMap).Parse(opt.layout)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 
-	t.l = l
+	// traverse for all other templates
+	if err := t.walk(opt.exts); err != nil {
+		return nil, fmt.Errorf("error creating new layout: %w", err)
+	}
 
 	return t, nil
 }
@@ -145,6 +136,90 @@ func (t *tplLayout) renderPartial(name string, params ...any) (template.HTML, er
 	return template.HTML(buf.String()), nil
 }
 
+func (t *tplLayout) walk(exts []string) error {
+	err := fs.WalkDir(t.fs, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// skip hidden files and directories.
+		if strings.HasPrefix(d.Name(), ".") && d.Name() != "." {
+			if d.IsDir() {
+				return fs.SkipDir
+			}
+			return nil
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		ext := filepath.Ext(d.Name())
+		if !validExt(exts, ext) {
+			return nil
+		}
+
+		f, err := readFile(t.fs, path)
+		if err != nil {
+			return err
+		}
+
+		if _, err := t.l.New(path).Parse(f); err != nil {
+			return fmt.Errorf("error parsing template '%s': %w", path, err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("error locating templates: %w", err)
+	}
+
+	return nil
+}
+
+func parseOptions(fsys fs.FS, options *Options) (opt struct {
+	layout  string
+	funcMap template.FuncMap
+	exts    []string
+	cache   bool
+	fs      fs.FS
+}, err error) {
+	// defaults
+	opt.layout = defaultLayout
+	opt.exts = defaultExts
+	opt.funcMap = map[string]any{}
+	opt.fs = fsys
+
+	if options == nil {
+		return opt, nil
+	}
+	opt.cache = !options.NoCache
+
+	if options.Layout != "" {
+		f, err := readFile(fsys, options.Layout)
+		if err != nil {
+			return opt, fmt.Errorf("error reading layout file '%s': %w", options.Layout, err)
+		}
+		opt.layout = f
+	}
+	if options.Root != "" {
+		sub, err := fs.Sub(fsys, options.Root)
+		if err != nil {
+			return opt, fmt.Errorf("error setting subdirectory '%s': %w", options.Root, err)
+		}
+		opt.fs = sub
+	}
+	if len(options.Exts) > 0 {
+		opt.exts = options.Exts
+	}
+	for k, f := range options.FuncMap {
+		opt.funcMap[k] = f
+	}
+
+	return opt, nil
+}
+
 func readFile(fsys fs.FS, name string) (string, error) {
 	f, err := fs.ReadFile(fsys, name)
 	if err != nil {
@@ -152,4 +227,18 @@ func readFile(fsys fs.FS, name string) (string, error) {
 	}
 
 	return string(f), nil
+}
+
+func validExt(exts []string, ext string) bool {
+	if ext == "" {
+		return false
+	}
+
+	for _, e := range exts {
+		if strings.TrimPrefix(e, ".") == strings.TrimPrefix(ext, ".") {
+			return true
+		}
+	}
+
+	return false
 }

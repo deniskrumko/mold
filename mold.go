@@ -1,6 +1,7 @@
 package mold
 
 import (
+	"errors"
 	"html/template"
 	"io"
 	"io/fs"
@@ -27,15 +28,22 @@ type Layout interface {
 type Options struct {
 	// Path to the layout file.
 	Layout string
-	// Root directory for views and partials.
+	// Root subdirectory for views and partials.
 	// NOTE: this is not applicable to the layout path.
 	Root string
+	// Filename extensions for the templates. Only files with the specified extensions
+	// would be accessible.
+	// Default: ["html", "gohtml", "tpl", "tmpl"]
+	Exts []string
 	// If set to true, templates would be read from disk and parsed on each request.
 	// Useful for quick feedback during development, otherwise should be left as false.
 	NoCache bool
 	// FuncMap is the [template.FuncMap] that is available for use in the templates.
 	FuncMap template.FuncMap
 }
+
+// ErrNotFound is returned when a template is not found.
+var ErrNotFound = errors.New("template not found")
 
 // New creates a new Layout with fs as the underlying filesystem.
 func New(fs fs.FS) Layout {

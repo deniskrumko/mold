@@ -150,6 +150,7 @@ func readFile(fs fs.FS, name string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error reading file: %w", err)
 	}
+	// it is safe to do this, template.ParseFS does same thing.
 	b, err := io.ReadAll(f)
 	if err != nil {
 		return "", fmt.Errorf("error reading file: %w", err)

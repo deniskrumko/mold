@@ -145,16 +145,11 @@ func (t *tplLayout) renderPartial(name string, params ...any) (template.HTML, er
 	return template.HTML(buf.String()), nil
 }
 
-func readFile(fs fs.FS, name string) (string, error) {
-	f, err := fs.Open(name)
-	if err != nil {
-		return "", fmt.Errorf("error reading file: %w", err)
-	}
-	// it is safe to do this, template.ParseFS does same thing.
-	b, err := io.ReadAll(f)
+func readFile(fsys fs.FS, name string) (string, error) {
+	f, err := fs.ReadFile(fsys, name)
 	if err != nil {
 		return "", fmt.Errorf("error reading file: %w", err)
 	}
 
-	return string(b), nil
+	return string(f), nil
 }

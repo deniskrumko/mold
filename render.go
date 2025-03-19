@@ -13,7 +13,11 @@ import (
 var defaultLayout string
 
 func newLayout(fsys fs.FS, options *Options) (Layout, error) {
-	t := &tplLayout{fs: fsys, views: map[string]*template.Template{}}
+	t := &tplLayout{
+		fs:    fsys,
+		views: map[string]*template.Template{},
+		parts: map[string]*template.Template{},
+	}
 	funcs := map[string]any{"partial": t.renderPartial}
 
 	file := defaultLayout
@@ -57,6 +61,7 @@ type tplLayout struct {
 
 	cache bool
 	views map[string]*template.Template
+	parts map[string]*template.Template
 }
 
 // Render implements Layout.
@@ -114,13 +119,22 @@ func (t *tplLayout) renderPartial(name string, params ...any) (template.HTML, er
 		data = params[0]
 	}
 
-	f, err := readFile(t.fs, name)
-	if err != nil {
-		return "", fmt.Errorf("error rendering partial '%s': %w", name, err)
-	}
-	tpl, err := template.New("partial").Parse(f)
-	if err != nil {
-		return "", fmt.Errorf("error rendering partial '%s': %w", name, err)
+	var tpl *template.Template
+
+	if t.cache {
+		if p, ok := t.parts[name]; ok {
+			tpl = p
+		}
+	} else {
+		f, err := readFile(t.fs, name)
+		if err != nil {
+			return "", fmt.Errorf("error rendering partial '%s': %w", name, err)
+		}
+		tpl, err = template.New("partial").Parse(f)
+		if err != nil {
+			return "", fmt.Errorf("error rendering partial '%s': %w", name, err)
+		}
+		t.parts[name] = tpl
 	}
 
 	var buf bytes.Buffer

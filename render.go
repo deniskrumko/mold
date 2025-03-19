@@ -25,7 +25,6 @@ func newLayout(fsys fs.FS, options *Options) (Layout, error) {
 	}
 	t := &tplLayout{
 		fs:    opt.fs,
-		cache: opt.cache,
 		views: map[string]*template.Template{},
 		parts: map[string]*template.Template{},
 	}
@@ -50,7 +49,6 @@ type tplLayout struct {
 	fs fs.FS
 	l  *template.Template
 
-	cache bool
 	views map[string]*template.Template
 	parts map[string]*template.Template
 }
@@ -74,10 +72,8 @@ func (t *tplLayout) Render(w io.Writer, view string, data any) error {
 }
 
 func (t *tplLayout) parseView(name string) (*template.Template, error) {
-	if t.cache {
-		if l, ok := t.views[name]; ok {
-			return l, nil
-		}
+	if l, ok := t.views[name]; ok {
+		return l, nil
 	}
 
 	l, err := t.l.Clone()
@@ -112,10 +108,8 @@ func (t *tplLayout) renderPartial(name string, params ...any) (template.HTML, er
 
 	var tpl *template.Template
 
-	if t.cache {
-		if p, ok := t.parts[name]; ok {
-			tpl = p
-		}
+	if p, ok := t.parts[name]; ok {
+		tpl = p
 	} else {
 		f, err := readFile(t.fs, name)
 		if err != nil {
@@ -194,7 +188,6 @@ func parseOptions(fsys fs.FS, options *Options) (opt struct {
 	if options == nil {
 		return opt, nil
 	}
-	opt.cache = !options.NoCache
 
 	if options.Layout != "" {
 		f, err := readFile(fsys, options.Layout)

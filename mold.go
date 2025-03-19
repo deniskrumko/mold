@@ -35,9 +35,6 @@ type Options struct {
 	// would be accessible.
 	// Default: ["html", "gohtml", "tpl", "tmpl"]
 	Exts []string
-	// If set to true, templates would be read from disk and parsed on each request.
-	// Useful for quick feedback during development, otherwise should be left as false.
-	NoCache bool
 	// FuncMap is the [template.FuncMap] that is available for use in the templates.
 	FuncMap template.FuncMap
 }

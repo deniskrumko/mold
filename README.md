@@ -6,6 +6,8 @@ Mold builds on Go templates to provide a simple and familiar API for rendering w
 
 ### 1. Create a template file
 
+Create an HTML file named `index.html`.
+
 ```html
 {{define "head"}}
 <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
@@ -16,11 +18,13 @@ Mold builds on Go templates to provide a simple and familiar API for rendering w
 
 ### 2. Render
 
+Create and render the layout in an HTTP handler.
+
 ```go
 //go:embed index.html
 var dir embed.FS
 
-var layout = mold.New(dir)
+var layout, _ = mold.New(dir)
 
 func handle(w http.ResponseWriter, r *http.Request){
     layout.Render(w, "index.html", nil)
@@ -41,21 +45,21 @@ Custom layout can be specified to override the [default](https://github.com/abio
 <!DOCTYPE html>
 <html>
 <head>
-    {{ template "head" .data }}
+    {{ render "head" }}
 </head>
 <body>
-    {{ template "body" .data }}
+    {{ render }}
 </body>
 </html>
 ```
 
-Create instance with options.
+Create instance with config.
 
 ```go
-options := mold.Options{
+config := mold.Config{
 	Layout: "path/to/layout.html",
 }
-layout, err := mold.NewWithOptions(options)
+layout, err := mold.NewWithConfig(config)
 ```
 
 ### Partials
@@ -68,7 +72,8 @@ Partials can be rendered within templates.
 
 ## Why?
 
-Go templates, while simple and powerful, can be unfamiliar. Mold provides a more intuitive and familiar higher-level usage, without reinventing the wheel.
+Go templates, while simple and powerful, can be unfamiliar.
+Mold provides a more intuitive and familiar higher-level usage, without reinventing the wheel.
 
 ## License
 

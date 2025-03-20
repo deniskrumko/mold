@@ -39,9 +39,10 @@ Check the [examples](https://github.com/abiosoft/mold/tree/main/examples) direct
 
 ### Layouts
 
-Custom layout can be specified to override the [default](https://github.com/abiosoft/mold/blob/main/layout.html).
+A custom layout can be specified to override the [default](https://github.com/abiosoft/mold/blob/main/layout.html).
 
-`render` takes an optional argument to render a defined section, otherwise renders the template body.
+`render` without arguments renders the entire template body.
+Alternatively, you can specify a named section to render only that portion.
 
 ```html
 <!DOCTYPE html>
@@ -55,7 +56,7 @@ Custom layout can be specified to override the [default](https://github.com/abio
 </html>
 ```
 
-Create an instance with config specifying the path to the layout file.
+An instance can be created with config specifying the path to the layout file.
 
 ```go
 config := mold.Config{

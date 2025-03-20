@@ -1,6 +1,6 @@
 # Mold
 
-Mold builds on Go templates to provide a simple and familiar API for rendering web pages.
+Mold builds on [Go templates](https://pkg.go.dev/text/template) to provide a simple and familiar API for rendering web pages.
 
 ## Getting Started
 
@@ -41,6 +41,8 @@ Check the [examples](https://github.com/abiosoft/mold/tree/main/examples) direct
 
 Custom layout can be specified to override the [default](https://github.com/abiosoft/mold/blob/main/layout.html).
 
+`render` takes an optional argument to render a defined section, otherwise renders the template body.
+
 ```html
 <!DOCTYPE html>
 <html>
@@ -53,18 +55,18 @@ Custom layout can be specified to override the [default](https://github.com/abio
 </html>
 ```
 
-Create instance with config.
+Create an instance with config specifying the path to the layout file.
 
 ```go
 config := mold.Config{
-	Layout: "path/to/layout.html",
+    Layout: "path/to/layout.html",
 }
 layout, err := mold.NewWithConfig(config)
 ```
 
 ### Partials
 
-Partials can be rendered within templates.
+Reusable template snippets can be rendered within templates with `partial`.
 
 ```html
 {{ partial "path/to/partial.html" }}
@@ -72,7 +74,7 @@ Partials can be rendered within templates.
 
 ## Why?
 
-Go templates, while simple and powerful, can be unfamiliar.
+Go templates, while simple and powerful, can be unfamiliar when dealing with multiple files.
 Mold provides a more intuitive and familiar higher-level usage, without reinventing the wheel.
 
 ## License

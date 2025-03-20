@@ -19,6 +19,11 @@ var (
 	defaultExts = []string{"html", "gohtml", "tpl", "tmpl"}
 )
 
+const (
+	bodySection = "body"
+	headSection = "head"
+)
+
 func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 	opt, err := processConfig(fsys, options)
 	if err != nil {
@@ -42,9 +47,9 @@ func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 	}
 
 	// include referenced templates for the layout
-	refs := fetchRefs(t.layout.Tree.Root)
+	refs := fetchRefs(nil, 0, t.layout.Tree.Root, true, true)
 	for _, ref := range refs {
-		if ref == "body" || ref == "head" {
+		if ref == bodySection || ref == headSection {
 			continue
 		}
 		tpl := t.root.Lookup(ref)
@@ -73,11 +78,7 @@ func (t *tplLayout) Render(w io.Writer, view string, data any) error {
 		return err
 	}
 
-	layoutData := map[string]any{
-		"data": data,
-	}
-
-	if err := l.Execute(w, layoutData); err != nil {
+	if err := l.Execute(w, data); err != nil {
 		return fmt.Errorf("error rendering layout with view '%s': %w", view, err)
 	}
 
@@ -101,7 +102,7 @@ func (t *tplLayout) parseView(name string) (*template.Template, error) {
 	}
 
 	// add referenced templates for the view
-	refs := fetchRefs(body.Tree.Root)
+	refs := fetchRefs(nil, 0, body.Tree.Root, false, true)
 	for _, ref := range refs {
 		tpl := t.root.Lookup(ref)
 		if tpl == nil {
@@ -114,7 +115,7 @@ func (t *tplLayout) parseView(name string) (*template.Template, error) {
 	for _, tpl := range body.Templates() {
 		tplName := tpl.Name()
 		if tplName == name {
-			tplName = "body"
+			tplName = bodySection
 		}
 		l.AddParseTree(tplName, tpl.Tree)
 	}
@@ -157,7 +158,7 @@ func (t *tplLayout) walk(exts []string) error {
 			return err
 		}
 
-		if nt, err := t.root.New(path).Parse(f); err != nil {
+		if nt, err := t.root.New(path).Funcs(placeholderFuncs).Parse(f); err != nil {
 			return fmt.Errorf("error parsing template '%s': %w", path, err)
 		} else {
 			*t.root = *nt
@@ -177,8 +178,8 @@ func processConfig(fsys fs.FS, c *Config) (conf struct {
 	// defaults
 	conf.layout = defaultLayout
 	conf.exts = defaultExts
-	conf.funcMap = map[string]any{}
 	conf.fs = fsys
+	conf.funcMap = placeholderFuncs
 
 	if c == nil {
 		return conf, nil
@@ -232,24 +233,92 @@ func validExt(exts []string, ext string) bool {
 }
 
 // fetchRefs fetchs all templates referenced by the root note.
-func fetchRefs(node parse.Node) []string {
+func fetchRefs(parent *parse.ListNode, index int, node parse.Node, render, partial bool) []string {
 	var ts []string
-	if t, ok := node.(*parse.TemplateNode); ok {
-		ts = append(ts, t.Name)
+	if a, ok := node.(*parse.ActionNode); ok {
+		if len(a.Pipe.Cmds) > 0 {
+			funcName, tname := getFunctionName(a.Pipe.Cmds[0])
+			if funcName == "render" || funcName == "partial" {
+				processActionNode(parent, index, &node, render, partial)
+			}
+			if tname != "" {
+				ts = append(ts, tname)
+			}
+		}
 	}
 	if l, ok := node.(*parse.ListNode); ok {
-		for _, n := range l.Nodes {
-			ts = append(ts, fetchRefs(n)...)
+		for i, n := range l.Nodes {
+			ts = append(ts, fetchRefs(l, i, n, render, partial)...)
 		}
 	}
 	if i, ok := node.(*parse.IfNode); ok {
-		ts = append(ts, fetchRefs(i.List)...)
-		ts = append(ts, fetchRefs(i.ElseList)...)
+		ts = append(ts, fetchRefs(parent, index, i.List, render, partial)...)
+		ts = append(ts, fetchRefs(parent, index, i.ElseList, render, partial)...)
 	}
 	if r, ok := node.(*parse.RangeNode); ok {
-		ts = append(ts, fetchRefs(r.List)...)
-		ts = append(ts, fetchRefs(r.ElseList)...)
+		ts = append(ts, fetchRefs(parent, index, r.List, render, partial)...)
+		ts = append(ts, fetchRefs(parent, index, r.ElseList, render, partial)...)
 	}
 
 	return ts
+}
+
+func processActionNode(parent *parse.ListNode, index int, node *parse.Node, render, partial bool) {
+	if parent == nil {
+		// this must never happen
+		panic("parent node is nil")
+	}
+
+	actionNode := (*node).(*parse.ActionNode)
+	cmd := actionNode.Pipe.Cmds[0]
+	funcName, name := getFunctionName(cmd)
+
+	switch funcName {
+	case "partial":
+		if !partial {
+			return
+		}
+	case "render":
+		if !render {
+			return
+		}
+		if name == "" {
+			name = "body"
+		}
+
+	default:
+		return
+	}
+
+	cmd.Args = []parse.Node{&parse.DotNode{}}
+	actionNode.Pipe.Cmds = []*parse.CommandNode{cmd}
+
+	tn := &parse.TemplateNode{
+		NodeType: parse.NodeTemplate,
+		Pos:      actionNode.Pos,
+		Line:     actionNode.Line,
+		Name:     name,
+		Pipe:     actionNode.Pipe,
+	}
+
+	parent.Nodes[index] = tn
+}
+
+func getFunctionName(cmd *parse.CommandNode) (fn string, file string) {
+	if len(cmd.Args) > 0 {
+		if i, ok := cmd.Args[0].(*parse.IdentifierNode); ok {
+			fn = i.Ident
+		}
+	}
+	if len(cmd.Args) > 1 {
+		if s, ok := cmd.Args[1].(*parse.StringNode); ok {
+			file = s.Text
+		}
+	}
+	return
+}
+
+var placeholderFuncs = map[string]any{
+	"render":  func(...string) string { return "" },
+	"partial": func(string, ...any) string { return "" },
 }

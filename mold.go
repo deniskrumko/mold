@@ -35,7 +35,7 @@ type Config struct {
 	// would be accessible.
 	// Default: ["html", "gohtml", "tpl", "tmpl"]
 	Exts []string
-	// FuncMap is the [template.FuncMap] that is available for use in the templates.
+	// Functions that are available for use in the templates.
 	FuncMap template.FuncMap
 }
 
@@ -50,4 +50,15 @@ func New(fs fs.FS) (Layout, error) {
 // NewWithConfig is like [New] with support for config.
 func NewWithConfig(fs fs.FS, c Config) (Layout, error) {
 	return newLayout(fs, &c)
+}
+
+// Must is a helper that wraps a call to a function returning ([Layout], error)
+// and panics if the error is non-nil.
+//
+//	var t = mold.Must(mold.New(fs))
+func Must(l Layout, err error) Layout {
+	if err != nil {
+		panic(err)
+	}
+	return l
 }

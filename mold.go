@@ -24,8 +24,8 @@ type Layout interface {
 	Render(w io.Writer, view string, data any) error
 }
 
-// Options is the configuration options for a new Layout.
-type Options struct {
+// Config is the configuration for a new Layout.
+type Config struct {
 	// Path to the layout file.
 	Layout string
 	// Root subdirectory for views and partials.
@@ -43,15 +43,11 @@ type Options struct {
 var ErrNotFound = errors.New("template not found")
 
 // New creates a new Layout with fs as the underlying filesystem.
-func New(fs fs.FS) Layout {
-	l, err := newLayout(fs, nil)
-	if err != nil {
-		panic(err) // this should never happen
-	}
-	return l
+func New(fs fs.FS) (Layout, error) {
+	return newLayout(fs, nil)
 }
 
-// NewWithOptions is like [New] with support for options.
-func NewWithOptions(fs fs.FS, options Options) (Layout, error) {
-	return newLayout(fs, &options)
+// NewWithConfig is like [New] with support for config.
+func NewWithConfig(fs fs.FS, c Config) (Layout, error) {
+	return newLayout(fs, &c)
 }

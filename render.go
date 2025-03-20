@@ -19,8 +19,8 @@ var (
 	defaultExts = []string{"html", "gohtml", "tpl", "tmpl"}
 )
 
-func newLayout(fsys fs.FS, options *Options) (Layout, error) {
-	opt, err := parseOptions(fsys, options)
+func newLayout(fsys fs.FS, options *Config) (Layout, error) {
+	opt, err := processConfig(fsys, options)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
@@ -167,7 +167,7 @@ func (t *tplLayout) walk(exts []string) error {
 	})
 }
 
-func parseOptions(fsys fs.FS, options *Options) (opt struct {
+func processConfig(fsys fs.FS, c *Config) (conf struct {
 	layout  string
 	funcMap template.FuncMap
 	exts    []string
@@ -175,37 +175,37 @@ func parseOptions(fsys fs.FS, options *Options) (opt struct {
 	fs      fs.FS
 }, err error) {
 	// defaults
-	opt.layout = defaultLayout
-	opt.exts = defaultExts
-	opt.funcMap = map[string]any{}
-	opt.fs = fsys
+	conf.layout = defaultLayout
+	conf.exts = defaultExts
+	conf.funcMap = map[string]any{}
+	conf.fs = fsys
 
-	if options == nil {
-		return opt, nil
+	if c == nil {
+		return conf, nil
 	}
 
-	if options.Layout != "" {
-		f, err := readFile(fsys, options.Layout)
+	if c.Layout != "" {
+		f, err := readFile(fsys, c.Layout)
 		if err != nil {
-			return opt, fmt.Errorf("error reading layout file '%s': %w", options.Layout, err)
+			return conf, fmt.Errorf("error reading layout file '%s': %w", c.Layout, err)
 		}
-		opt.layout = f
+		conf.layout = f
 	}
-	if options.Root != "" {
-		sub, err := fs.Sub(fsys, options.Root)
+	if c.Root != "" {
+		sub, err := fs.Sub(fsys, c.Root)
 		if err != nil {
-			return opt, fmt.Errorf("error setting subdirectory '%s': %w", options.Root, err)
+			return conf, fmt.Errorf("error setting subdirectory '%s': %w", c.Root, err)
 		}
-		opt.fs = sub
+		conf.fs = sub
 	}
-	if len(options.Exts) > 0 {
-		opt.exts = options.Exts
+	if len(c.Exts) > 0 {
+		conf.exts = c.Exts
 	}
-	for k, f := range options.FuncMap {
-		opt.funcMap[k] = f
+	for k, f := range c.FuncMap {
+		conf.funcMap[k] = f
 	}
 
-	return opt, nil
+	return conf, nil
 }
 
 func readFile(fsys fs.FS, name string) (string, error) {

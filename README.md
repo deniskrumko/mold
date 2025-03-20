@@ -35,14 +35,16 @@ func handle(w http.ResponseWriter, r *http.Request){
 
 Check the [examples](https://github.com/abiosoft/mold/tree/main/examples) directory for more.
 
-## Other Features
+## Concepts
 
 ### Layouts
 
-A custom layout can be specified to override the [default](https://github.com/abiosoft/mold/blob/main/layout.html).
+Layouts provide the overall structure for your web pages.
+They define the common elements that are shared across multiple views,
+such as headers, footers, navigation menus, stylesheets e.t.c.
 
-`render` without arguments renders the entire template body.
-Alternatively, you can specify a named section to render only that portion.
+Inside a layout, calling `render` without an argument inserts the view's content into the layout's body.
+To render a specific named section, pass the section's name as an argument.
 
 ```html
 <!DOCTYPE html>
@@ -55,8 +57,8 @@ Alternatively, you can specify a named section to render only that portion.
 </body>
 </html>
 ```
-
-An instance can be created with config specifying the path to the layout file.
+The default [default](https://github.com/abiosoft/mold/blob/main/layout.html) layout can be overriden
+by creating a custom layout file and specifying it in the config for a new instance.
 
 ```go
 config := mold.Config{
@@ -65,9 +67,23 @@ config := mold.Config{
 layout, err := mold.NewWithConfig(config)
 ```
 
+### Views
+
+Views are templates that generate the content that is inserted into the body of layouts.
+Views support named sections, allowing content to be rendered in specific parts of the layout.
+
+The `head` section is in the default layout merely as a convention, a section can be given any name.
+
+```html
+{{define "scripts"}}
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+{{end}}
+```
+
 ### Partials
 
-Reusable template snippets can be rendered within templates with `partial`.
+Partials are reusable template snippets that allow you to break down complex views into smaller, manageable components.
+They can be used to encapsulate and reuse common logic across multiple views.
 
 ```html
 {{ partial "path/to/partial.html" }}

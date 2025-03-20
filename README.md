@@ -57,7 +57,7 @@ To render a specific named section, pass the section's name as an argument.
 </body>
 </html>
 ```
-The default [default](https://github.com/abiosoft/mold/blob/main/layout.html) layout can be overriden
+The [default](https://github.com/abiosoft/mold/blob/main/layout.html) layout can be overriden
 by creating a custom layout file and specifying it in the config for a new instance.
 
 ```go
@@ -83,7 +83,7 @@ The `head` section is in the default layout merely as a convention, a section ca
 ### Partials
 
 Partials are reusable template snippets that allow you to break down complex views into smaller, manageable components.
-They can be used to encapsulate and reuse common logic across multiple views.
+They can be used to encapsulate and reuse common logic across multiple views and layouts.
 
 ```html
 {{ partial "path/to/partial.html" }}

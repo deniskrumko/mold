@@ -8,7 +8,7 @@ import (
 )
 
 // Layout represents a web page structure, incorporating a specific view.
-// It encapsulates the header and body and inserts the dynamic content of a view
+// It encapsulates the body and other sections and inserts the dynamic content of a view
 // into a designated area.
 type Layout interface {
 	// Render executes the layout template, merging it with the specified view template,

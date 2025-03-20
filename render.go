@@ -1,7 +1,6 @@
 package mold
 
 import (
-	"bytes"
 	_ "embed"
 	"fmt"
 	"html/template"
@@ -9,12 +8,14 @@ import (
 	"io/fs"
 	"path/filepath"
 	"strings"
+	"text/template/parse"
 )
 
 var (
 	//go:embed layout.html
 	defaultLayout string
 
+	// default filename extenstions for template files
 	defaultExts = []string{"html", "gohtml", "tpl", "tmpl"}
 )
 
@@ -24,22 +25,33 @@ func newLayout(fsys fs.FS, options *Options) (Layout, error) {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 	t := &tplLayout{
-		fs:    opt.fs,
-		views: map[string]*template.Template{},
-		parts: map[string]*template.Template{},
+		fs:   opt.fs,
+		root: template.New("root"),
+		set:  map[string]*template.Template{},
 	}
-	// add partial renderer
-	opt.funcMap["partial"] = t.renderPartial
+
+	// traverse for all templates
+	if err := t.walk(opt.exts); err != nil {
+		return nil, fmt.Errorf("error creating new layout: %w", err)
+	}
 
 	// parse layout template
-	t.l, err = template.New("layout").Funcs(opt.funcMap).Parse(opt.layout)
+	t.layout, err = template.New("layout").Funcs(opt.funcMap).Parse(opt.layout)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 
-	// traverse for all other templates
-	if err := t.walk(opt.exts); err != nil {
-		return nil, fmt.Errorf("error creating new layout: %w", err)
+	// include referenced templates for the layout
+	refs := fetchRefs(t.layout.Tree.Root)
+	for _, ref := range refs {
+		if ref == "body" || ref == "head" {
+			continue
+		}
+		tpl := t.root.Lookup(ref)
+		if tpl == nil {
+			return nil, fmt.Errorf("error parsing template '%s': %w", ref, ErrNotFound)
+		}
+		t.layout.AddParseTree(ref, tpl.Tree)
 	}
 
 	return t, nil
@@ -47,10 +59,11 @@ func newLayout(fsys fs.FS, options *Options) (Layout, error) {
 
 type tplLayout struct {
 	fs fs.FS
-	l  *template.Template
 
-	views map[string]*template.Template
-	parts map[string]*template.Template
+	layout *template.Template
+	root   *template.Template
+
+	set map[string]*template.Template
 }
 
 // Render implements Layout.
@@ -72,22 +85,38 @@ func (t *tplLayout) Render(w io.Writer, view string, data any) error {
 }
 
 func (t *tplLayout) parseView(name string) (*template.Template, error) {
-	if l, ok := t.views[name]; ok {
+	// reuse if previously computed
+	if l, ok := t.set[name]; ok {
 		return l, nil
 	}
 
-	l, err := t.l.Clone()
+	l, err := t.layout.Clone()
 	if err != nil {
-		return nil, fmt.Errorf("error cloning layout for view '%s': %w", name, err)
+		return nil, fmt.Errorf("error creating layout for view '%s': %w", name, err)
 	}
 
-	f, err := readFile(t.fs, name)
-	if err != nil {
-		return nil, fmt.Errorf("error reading view '%s': %w", name, err)
+	body := t.root.Lookup(name)
+	if body == nil {
+		return nil, ErrNotFound
 	}
 
-	if _, err := l.New("body").Parse(f); err != nil {
-		return nil, fmt.Errorf("error parsing view '%s': %w", name, err)
+	// add referenced templates for the view
+	refs := fetchRefs(body.Tree.Root)
+	for _, ref := range refs {
+		tpl := t.root.Lookup(ref)
+		if tpl == nil {
+			return nil, fmt.Errorf("error parsing template '%s': %w", ref, ErrNotFound)
+		}
+		l.AddParseTree(ref, tpl.Tree)
+	}
+
+	// add defined templates to the layout
+	for _, tpl := range body.Templates() {
+		tplName := tpl.Name()
+		if tplName == name {
+			tplName = "body"
+		}
+		l.AddParseTree(tplName, tpl.Tree)
 	}
 
 	// check for head or put an empty placeholder if missing
@@ -95,43 +124,13 @@ func (t *tplLayout) parseView(name string) (*template.Template, error) {
 		l.New("head").Parse("")
 	}
 
-	t.views[name] = l
+	t.set[name] = l
 
 	return l, nil
 }
 
-func (t *tplLayout) renderPartial(name string, params ...any) (template.HTML, error) {
-	var data any
-	if len(params) > 0 {
-		data = params[0]
-	}
-
-	var tpl *template.Template
-
-	if p, ok := t.parts[name]; ok {
-		tpl = p
-	} else {
-		f, err := readFile(t.fs, name)
-		if err != nil {
-			return "", fmt.Errorf("error rendering partial '%s': %w", name, err)
-		}
-		tpl, err = template.New("partial").Parse(f)
-		if err != nil {
-			return "", fmt.Errorf("error rendering partial '%s': %w", name, err)
-		}
-		t.parts[name] = tpl
-	}
-
-	var buf bytes.Buffer
-	if err := tpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("error rendering partial '%s': %w", name, err)
-	}
-
-	return template.HTML(buf.String()), nil
-}
-
 func (t *tplLayout) walk(exts []string) error {
-	err := fs.WalkDir(t.fs, ".", func(path string, d fs.DirEntry, err error) error {
+	return fs.WalkDir(t.fs, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -158,18 +157,14 @@ func (t *tplLayout) walk(exts []string) error {
 			return err
 		}
 
-		if _, err := t.l.New(path).Parse(f); err != nil {
+		if nt, err := t.root.New(path).Parse(f); err != nil {
 			return fmt.Errorf("error parsing template '%s': %w", path, err)
+		} else {
+			*t.root = *nt
 		}
 
 		return nil
 	})
-
-	if err != nil {
-		return fmt.Errorf("error locating templates: %w", err)
-	}
-
-	return nil
 }
 
 func parseOptions(fsys fs.FS, options *Options) (opt struct {
@@ -234,4 +229,27 @@ func validExt(exts []string, ext string) bool {
 	}
 
 	return false
+}
+
+// fetchRefs fetchs all templates referenced by the root note.
+func fetchRefs(node parse.Node) []string {
+	var ts []string
+	if t, ok := node.(*parse.TemplateNode); ok {
+		ts = append(ts, t.Name)
+	}
+	if l, ok := node.(*parse.ListNode); ok {
+		for _, n := range l.Nodes {
+			ts = append(ts, fetchRefs(n)...)
+		}
+	}
+	if i, ok := node.(*parse.IfNode); ok {
+		ts = append(ts, fetchRefs(i.List)...)
+		ts = append(ts, fetchRefs(i.ElseList)...)
+	}
+	if r, ok := node.(*parse.RangeNode); ok {
+		ts = append(ts, fetchRefs(r.List)...)
+		ts = append(ts, fetchRefs(r.ElseList)...)
+	}
+
+	return ts
 }

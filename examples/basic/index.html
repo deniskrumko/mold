@@ -1,0 +1,27 @@
+{{define "head"}}
+<link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+{{end}}
+
+{{partial "partials/header.html"}}
+
+{{with .Name}}
+
+<h3 style="text-align: center;">
+    Hello {{.}}
+</h3>
+
+<form action="/hello" method="get" style="text-align: center;">
+    Name:
+    <input name="name" autocomplete="off" />
+    <button type="submit">Say hello</button>
+</form>
+
+{{else}}
+
+<h3 style="text-align: center;">
+    Welcome :)
+</h3>
+
+{{end}}
+
+{{partial "partials/footer.html"}}

@@ -1,4 +1,4 @@
-# mold
+# Mold
 
 Mold builds on Go templates to provide a simple and familiar API for rendering web pages.
 

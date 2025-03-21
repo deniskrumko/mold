@@ -32,7 +32,7 @@ type Config struct {
 	// NOTE: this is not applicable to the layout path.
 	Root string
 	// Filename extensions for the templates. Only files with the specified extensions
-	// would be accessible.
+	// would be parsed.
 	// Default: ["html", "gohtml", "tpl", "tmpl"]
 	Exts []string
 	// Functions that are available for use in the templates.

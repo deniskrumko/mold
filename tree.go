@@ -1,6 +1,7 @@
 package mold
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"text/template/parse"
@@ -28,13 +29,13 @@ func processNode(
 	render,
 	partial bool,
 ) (ts []string, err error) {
-	// quit early if error occurs in the parent iteration
+	// quit early if an error occured in the parent recursive call
 	if parentErr != nil {
 		return ts, parentErr
 	}
 
-	// add only appends if there are no errors
-	add := func(t []string, err1 error) {
+	// appendResult appends the specified templates to the list of template names when there are no errors
+	appendResult := func(t []string, err1 error) {
 		if err1 != nil {
 			err = err1
 		}
@@ -58,16 +59,16 @@ func processNode(
 	}
 	if l, ok := node.(*parse.ListNode); ok {
 		for i, n := range l.Nodes {
-			add(processNode(l, i, n, err, render, partial))
+			appendResult(processNode(l, i, n, err, render, partial))
 		}
 	}
 	if i, ok := node.(*parse.IfNode); ok {
-		add(processNode(parent, index, i.List, err, render, partial))
-		add(processNode(parent, index, i.ElseList, err, render, partial))
+		appendResult(processNode(parent, index, i.List, err, render, partial))
+		appendResult(processNode(parent, index, i.ElseList, err, render, partial))
 	}
 	if r, ok := node.(*parse.RangeNode); ok {
-		add(processNode(parent, index, r.List, err, render, partial))
-		add(processNode(parent, index, r.ElseList, err, render, partial))
+		appendResult(processNode(parent, index, r.List, err, render, partial))
+		appendResult(processNode(parent, index, r.ElseList, err, render, partial))
 	}
 
 	return ts, err
@@ -76,7 +77,7 @@ func processNode(
 func processActionNode(parent *parse.ListNode, index int, node parse.Node, render, partial bool) error {
 	if parent == nil {
 		// this should never happen
-		panic("parent node is nil")
+		return errors.New("processActionNode error: parent node is nil")
 	}
 
 	actionNode := node.(*parse.ActionNode)
@@ -113,7 +114,7 @@ func processActionNode(parent *parse.ListNode, index int, node parse.Node, rende
 		Pipe:     actionNode.Pipe,
 	}
 
-	// replace the action node with a template node.
+	// replace the ActionNode with a TemplateNode.
 	parent.Nodes[index] = tn
 	return nil
 }
@@ -137,6 +138,7 @@ func getActionArgs(cmd *parse.CommandNode) (fn, file string, field *parse.FieldN
 	return
 }
 
+// posErr tracks the position in the layout file when a parse error occurs.
 type posErr struct {
 	pos     int
 	message string

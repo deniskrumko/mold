@@ -76,7 +76,7 @@ The `head` section is in the default layout merely as a convention, a section ca
 
 ```html
 {{define "scripts"}}
-<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="//unpkg.com/alpinejs" defer></script>
 {{end}}
 ```
 

@@ -58,13 +58,10 @@ To render a specific section, pass the section's name as an argument.
 </html>
 ```
 The [default](https://github.com/abiosoft/mold/blob/main/layout.html) layout can be overriden
-by creating a custom layout file and specifying it in the config for a new instance.
+by creating a custom layout file and specifying it as an option for a new instance.
 
 ```go
-config := mold.Config{
-    Layout: "path/to/layout.html",
-}
-layout, err := mold.NewWithConfig(config)
+layout, err := mold.New(fs, mold.WithLayout("path/to/layout.html"))
 ```
 
 ### Views
@@ -96,14 +93,13 @@ By default, the view's data context is used.
 {{ partial "partials/user_session.html" .User }}
 ```
 
-## What is wrong with Go templates?
+## Anything wrong with standard Go templates?
 
 Nothing! It is good at what it does.
 
 However, Go templates, while simple and powerful, can be unfamiliar when dealing with multiple template files.
 
-Mold on the other hand provides a more intuitive and conventional higher-level usage for dealing
-with multiple template files, without reinventing the wheel.
+Mold provides an intuitive and conventional higher-level usage of Go templates for dealing with multiple template files.
 
 ## License
 

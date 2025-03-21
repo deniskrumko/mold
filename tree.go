@@ -8,9 +8,9 @@ func processTree(parent *parse.ListNode, index int, node parse.Node, render, par
 	var ts []string
 	if a, ok := node.(*parse.ActionNode); ok {
 		if len(a.Pipe.Cmds) > 0 {
-			funcName, tname := getActionArgs(a.Pipe.Cmds[0])
-			if funcName == "render" || funcName == "partial" {
-				processActionNode(parent, index, &node, render, partial)
+			funcName, tname, _ := getActionArgs(a.Pipe.Cmds[0])
+			if funcName == renderFunc || funcName == partialFunc {
+				processActionNode(parent, index, node, render, partial)
 			}
 			if tname != "" {
 				ts = append(ts, tname)
@@ -34,34 +34,33 @@ func processTree(parent *parse.ListNode, index int, node parse.Node, render, par
 	return ts
 }
 
-func processActionNode(parent *parse.ListNode, index int, node *parse.Node, render, partial bool) {
+func processActionNode(parent *parse.ListNode, index int, node parse.Node, render, partial bool) {
 	if parent == nil {
 		// this should never happen
 		panic("parent node is nil")
 	}
 
-	actionNode := (*node).(*parse.ActionNode)
+	actionNode := node.(*parse.ActionNode)
 	cmd := actionNode.Pipe.Cmds[0]
-	funcName, name := getActionArgs(cmd)
+	funcName, name, field := getActionArgs(cmd)
 
-	switch funcName {
-	case "partial":
-		if !partial {
-			return
+	var arg parse.Node = &parse.DotNode{}
+
+	// only handle if the function name is render or partial
+	switch {
+	case funcName == partialFunc && partial:
+		if field != nil {
+			arg = field
 		}
-	case "render":
-		if !render {
-			return
-		}
+	case funcName == renderFunc && render:
 		if name == "" {
 			name = "body"
 		}
-
 	default:
 		return
 	}
 
-	cmd.Args = []parse.Node{&parse.DotNode{}}
+	cmd.Args = []parse.Node{arg}
 	actionNode.Pipe.Cmds = []*parse.CommandNode{cmd}
 
 	tn := &parse.TemplateNode{
@@ -76,7 +75,7 @@ func processActionNode(parent *parse.ListNode, index int, node *parse.Node, rend
 	parent.Nodes[index] = tn
 }
 
-func getActionArgs(cmd *parse.CommandNode) (fn string, file string) {
+func getActionArgs(cmd *parse.CommandNode) (fn, file string, field *parse.FieldNode) {
 	if len(cmd.Args) > 0 {
 		if i, ok := cmd.Args[0].(*parse.IdentifierNode); ok {
 			fn = i.Ident
@@ -85,6 +84,11 @@ func getActionArgs(cmd *parse.CommandNode) (fn string, file string) {
 	if len(cmd.Args) > 1 {
 		if s, ok := cmd.Args[1].(*parse.StringNode); ok {
 			file = s.Text
+		}
+	}
+	if len(cmd.Args) > 2 {
+		if f, ok := cmd.Args[2].(*parse.FieldNode); ok {
+			field = f
 		}
 	}
 	return

@@ -21,6 +21,9 @@ var (
 const (
 	bodySection = "body"
 	headSection = "head"
+
+	renderFunc  = "render"
+	partialFunc = "partial"
 )
 
 func newLayout(fsys fs.FS, options *Config) (Layout, error) {
@@ -45,7 +48,7 @@ func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 
-	// include referenced templates for the layout
+	// process template tree for layout
 	refs := processTree(nil, 0, t.layout.Tree.Root, true, true)
 	for _, ref := range refs {
 		if ref == bodySection || ref == headSection {
@@ -100,7 +103,7 @@ func (t *tplLayout) parseView(name string) (*template.Template, error) {
 		return nil, ErrNotFound
 	}
 
-	// add referenced templates for the view
+	// process template tree for body
 	refs := processTree(nil, 0, body.Tree.Root, false, true)
 	for _, ref := range refs {
 		tpl := t.root.Lookup(ref)
@@ -232,6 +235,6 @@ func validExt(exts []string, ext string) bool {
 }
 
 var placeholderFuncs = map[string]any{
-	"render":  func(...string) string { return "" },
-	"partial": func(string, ...any) string { return "" },
+	renderFunc:  func(...string) string { return "" },
+	partialFunc: func(string, ...any) string { return "" },
 }

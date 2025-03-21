@@ -11,8 +11,8 @@ import (
 var dir embed.FS
 
 var layout = mold.Must(mold.NewWithConfig(dir, mold.Config{
-	Layout: "web/layouts/layout.html",
 	Root:   "web",
+	Layout: "layouts/layout.html",
 }))
 
 func main() {

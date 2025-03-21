@@ -7,7 +7,17 @@ import (
 
 // processTree traverses the node tree and swaps render and partial declarations with equivalent template calls.
 // It returns all referenced templates encountered during the traversal.
-func processTree(parent *parse.ListNode, index int, node parse.Node, parentErr error, render, partial bool) (ts []string, err error) {
+func processTree(tree *parse.Tree, render, partial bool) ([]string, error) {
+	return processNode(nil, 0, tree.Root, nil, render, partial)
+}
+
+func processNode(parent *parse.ListNode,
+	index int,
+	node parse.Node,
+	parentErr error,
+	render,
+	partial bool,
+) (ts []string, err error) {
 	// quit early if error occurs in the parent iteration
 	if parentErr != nil {
 		return ts, parentErr
@@ -38,16 +48,16 @@ func processTree(parent *parse.ListNode, index int, node parse.Node, parentErr e
 	}
 	if l, ok := node.(*parse.ListNode); ok {
 		for i, n := range l.Nodes {
-			add(processTree(l, i, n, err, render, partial))
+			add(processNode(l, i, n, err, render, partial))
 		}
 	}
 	if i, ok := node.(*parse.IfNode); ok {
-		add(processTree(parent, index, i.List, err, render, partial))
-		add(processTree(parent, index, i.ElseList, err, render, partial))
+		add(processNode(parent, index, i.List, err, render, partial))
+		add(processNode(parent, index, i.ElseList, err, render, partial))
 	}
 	if r, ok := node.(*parse.RangeNode); ok {
-		add(processTree(parent, index, r.List, err, render, partial))
-		add(processTree(parent, index, r.ElseList, err, render, partial))
+		add(processNode(parent, index, r.List, err, render, partial))
+		add(processNode(parent, index, r.ElseList, err, render, partial))
 	}
 
 	return ts, err

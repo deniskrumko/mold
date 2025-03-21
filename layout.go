@@ -49,7 +49,7 @@ func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 	}
 
 	// process template tree for layout
-	refs, err := processTree(nil, 0, t.layout.Tree.Root, nil, true, true)
+	refs, err := processTree(t.layout.Tree, true, true)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
@@ -107,7 +107,7 @@ func (t *tplLayout) parseView(name string) (*template.Template, error) {
 	}
 
 	// process template tree for body
-	refs, err := processTree(nil, 0, body.Tree.Root, nil, false, true)
+	refs, err := processTree(body.Tree, false, true)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing view '%s': %w", name, err)
 	}

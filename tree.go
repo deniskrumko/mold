@@ -9,7 +9,7 @@ import (
 
 // processTree traverses the node tree and swaps render and partial declarations with equivalent template calls.
 // It returns all referenced templates encountered during the traversal.
-func processTree(t *template.Template, raw string, render, partial bool) ([]string, error) {
+func processTree(t *template.Template, raw string, render, partial bool) ([]templateName, error) {
 	ts, err := processNode(nil, 0, t.Tree.Root, nil, render, partial)
 	if err != nil {
 		if err, ok := err.(posErr); ok {
@@ -28,14 +28,14 @@ func processNode(
 	parentErr error,
 	render,
 	partial bool,
-) (ts []string, err error) {
+) (ts []templateName, err error) {
 	// quit early if an error occured in the parent recursive call
 	if parentErr != nil {
 		return ts, parentErr
 	}
 
 	// appendResult appends the specified templates to the list of template names when there are no errors
-	appendResult := func(t []string, err1 error) {
+	appendResult := func(t []templateName, err1 error) {
 		if err1 != nil {
 			err = err1
 		}
@@ -47,13 +47,14 @@ func processNode(
 	if a, ok := node.(*parse.ActionNode); ok {
 		if len(a.Pipe.Cmds) > 0 {
 			funcName, tname, _ := getActionArgs(a.Pipe.Cmds[0])
-			if funcName == renderFunc || funcName == partialFunc {
-				if err := processActionNode(parent, index, node, render, partial); err != nil {
-					return ts, err
-				}
+			if err := processActionNode(parent, index, node, funcName); err != nil {
+				return ts, err
 			}
-			if tname != "" {
-				ts = append(ts, tname)
+			// only include template name for partials
+			if funcName == partialFunc.String() && tname != "" {
+				ts = append(ts, templateName{name: tname, typ: partialFunc})
+			} else if funcName == renderFunc.String() && tname != "" {
+				ts = append(ts, templateName{name: tname, typ: renderFunc})
 			}
 		}
 	}
@@ -79,7 +80,7 @@ func processNode(
 	return ts, err
 }
 
-func processActionNode(parent *parse.ListNode, index int, node parse.Node, render, partial bool) error {
+func processActionNode(parent *parse.ListNode, index int, node parse.Node, funcName string) error {
 	if parent == nil {
 		// this should never happen
 		return errors.New("processActionNode error: parent node is nil")
@@ -87,20 +88,20 @@ func processActionNode(parent *parse.ListNode, index int, node parse.Node, rende
 
 	actionNode := node.(*parse.ActionNode)
 	cmd := actionNode.Pipe.Cmds[0]
-	funcName, name, field := getActionArgs(cmd)
+	_, name, field := getActionArgs(cmd)
 
 	var arg parse.Node = &parse.DotNode{}
 
 	// only handle if the function name is render or partial
 	switch {
-	case funcName == partialFunc && partial:
+	case funcName == partialFunc.String():
 		if field != nil {
 			arg = field
 		}
 		if name == "" {
 			return posErr{pos: int(actionNode.Pos), message: `partial: path to partial file is not specified`}
 		}
-	case funcName == renderFunc && render:
+	case funcName == renderFunc.String():
 		if name == "" {
 			name = "body"
 		}
@@ -169,4 +170,18 @@ func pos(body string, pos int) (line int, col int) {
 		}
 	}
 	return line, col
+}
+
+type templateFunc string
+
+func (t templateFunc) String() string { return string(t) }
+
+const (
+	renderFunc  templateFunc = "render"
+	partialFunc templateFunc = "partial"
+)
+
+type templateName struct {
+	name string
+	typ  templateFunc
 }

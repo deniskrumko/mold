@@ -23,13 +23,12 @@ const (
 	// sections
 	bodySection = "body"
 	headSection = "head"
-
-	// functions
-	renderFunc  = "render"
-	partialFunc = "partial"
 )
 
-type moldLayout map[string]*template.Template
+type (
+	templateSet map[string]*template.Template
+	moldLayout  templateSet
+)
 
 func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 	m := moldLayout{}
@@ -53,6 +52,10 @@ func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 
 	// process views
 	for _, t := range ts {
+		// ignore layout file
+		if t.name == opt.layout.name {
+			continue
+		}
 		view, err := parseView(root, layout, t.name, t.body)
 		if err != nil {
 			return nil, err
@@ -77,11 +80,8 @@ func (m moldLayout) Render(w io.Writer, view string, data any) error {
 	return nil
 }
 
-func (m moldLayout) walk(fsys fs.FS, exts []string) (root *template.Template, ts []struct {
-	name string
-	body string
-}, err error) {
-	root = template.New("root")
+func (m moldLayout) walk(fsys fs.FS, exts []string) (root templateSet, ts []templateFile, err error) {
+	root = templateSet{}
 	err = fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -109,14 +109,11 @@ func (m moldLayout) walk(fsys fs.FS, exts []string) (root *template.Template, ts
 			return err
 		}
 
-		if nt, err := root.New(path).Funcs(placeholderFuncs).Parse(f); err != nil {
+		if t, err := template.New(path).Funcs(placeholderFuncs).Parse(f); err != nil {
 			return fmt.Errorf("error parsing template '%s': %w", path, err)
 		} else {
-			*root = *nt
-			ts = append(ts, struct {
-				name string
-				body string
-			}{name: path, body: f})
+			root[path] = t
+			ts = append(ts, templateFile{name: path, body: f})
 		}
 
 		return nil
@@ -125,15 +122,21 @@ func (m moldLayout) walk(fsys fs.FS, exts []string) (root *template.Template, ts
 	return
 }
 
+type templateFile struct {
+	name string
+	body string
+}
+
 func setup(fsys fs.FS, c *Config) (conf struct {
-	layout  string
+	layout  templateFile
 	funcMap template.FuncMap
 	exts    []string
 	cache   bool
 	fs      fs.FS
 }, err error) {
 	// defaults
-	conf.layout = defaultLayout
+	conf.layout.body = defaultLayout
+	conf.layout.name = "default_layout"
 	conf.exts = defaultExts
 	conf.fs = fsys
 	conf.funcMap = placeholderFuncs
@@ -141,20 +144,20 @@ func setup(fsys fs.FS, c *Config) (conf struct {
 	if c == nil {
 		return conf, nil
 	}
-
-	if c.Layout != "" {
-		f, err := readFile(fsys, c.Layout)
-		if err != nil {
-			return conf, fmt.Errorf("error reading layout file '%s': %w", c.Layout, err)
-		}
-		conf.layout = f
-	}
 	if c.Root != "" {
 		sub, err := fs.Sub(fsys, c.Root)
 		if err != nil {
 			return conf, fmt.Errorf("error setting subdirectory '%s': %w", c.Root, err)
 		}
 		conf.fs = sub
+	}
+	if c.Layout != "" {
+		f, err := readFile(conf.fs, c.Layout)
+		if err != nil {
+			return conf, fmt.Errorf("error reading layout file '%s': %w", c.Layout, err)
+		}
+		conf.layout.body = f
+		conf.layout.name = c.Layout
 	}
 	if len(c.Exts) > 0 {
 		conf.exts = c.Exts
@@ -166,38 +169,38 @@ func setup(fsys fs.FS, c *Config) (conf struct {
 	return conf, nil
 }
 
-func parseLayout(root *template.Template, raw string, funcMap template.FuncMap) (*template.Template, error) {
-	layout, err := template.New("layout").Funcs(funcMap).Parse(raw)
+func parseLayout(root templateSet, l templateFile, funcMap template.FuncMap) (*template.Template, error) {
+	layout, err := template.New("layout").Funcs(funcMap).Parse(l.body)
 	if err != nil {
 		return nil, err
 	}
 
 	// process template tree for layout
-	refs, err := processTree(layout, raw, true, true)
+	refs, err := processTree(layout, l.body, true, true)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 	for _, ref := range refs {
-		if ref == bodySection || ref == headSection {
-			continue
-		}
-		t := root.Lookup(ref)
+		t := root[ref.name]
 		if t == nil {
-			return nil, fmt.Errorf("error parsing template '%s': %w", ref, ErrNotFound)
+			if ref.typ == partialFunc {
+				return nil, fmt.Errorf("error parsing template '%s': %w", ref.name, ErrNotFound)
+			}
+			t, _ = template.New(ref.name).Parse("")
 		}
-		layout.AddParseTree(ref, t.Tree)
+		layout.AddParseTree(ref.name, t.Tree)
 	}
 
 	return layout, nil
 }
 
-func parseView(root, layout *template.Template, name, raw string) (*template.Template, error) {
+func parseView(root templateSet, layout *template.Template, name, raw string) (*template.Template, error) {
 	view, err := layout.Clone()
 	if err != nil {
 		return nil, fmt.Errorf("error creating layout for view '%s': %w", name, err)
 	}
 
-	body := root.Lookup(name)
+	body := root[name]
 	if body == nil {
 		return nil, ErrNotFound
 	}
@@ -208,25 +211,20 @@ func parseView(root, layout *template.Template, name, raw string) (*template.Tem
 		return nil, fmt.Errorf("error parsing view '%s': %w", name, err)
 	}
 	for _, ref := range refs {
-		tpl := root.Lookup(ref)
-		if tpl == nil {
-			return nil, fmt.Errorf("error parsing template '%s': %w", ref, ErrNotFound)
+		t := root[ref.name]
+		if t == nil {
+			return nil, fmt.Errorf("error parsing template '%s': %w", ref.name, ErrNotFound)
 		}
-		view.AddParseTree(ref, tpl.Tree)
+		view.AddParseTree(ref.name, t.Tree)
 	}
 
 	// add defined templates to the layout
-	for _, tpl := range body.Templates() {
-		tplName := tpl.Name()
-		if tplName == name {
-			tplName = bodySection
+	for _, t := range body.Templates() {
+		tName := t.Name()
+		if tName == name {
+			tName = bodySection
 		}
-		view.AddParseTree(tplName, tpl.Tree)
-	}
-
-	// check for head or put an empty placeholder if missing
-	if view.Lookup("head") == nil {
-		view.New("head").Parse("")
+		view.AddParseTree(tName, t.Tree)
 	}
 
 	return view, nil
@@ -256,6 +254,6 @@ func validExt(exts []string, ext string) bool {
 }
 
 var placeholderFuncs = map[string]any{
-	renderFunc:  func(...string) string { return "" },
-	partialFunc: func(string, ...any) string { return "" },
+	renderFunc.String():  func(...string) string { return "" },
+	partialFunc.String(): func(string, ...any) string { return "" },
 }

@@ -24,7 +24,7 @@ type Layout interface {
 	Render(w io.Writer, view string, data any) error
 }
 
-// Config is the configuration for a new Layout.
+// Config is the configuration for a new [Layout].
 type Config struct {
 	// Path to the layout file.
 	Layout string
@@ -34,6 +34,7 @@ type Config struct {
 	Root string
 	// Filename extensions for the templates. Only files with the specified extensions
 	// would be parsed.
+	//
 	// Default: ["html", "gohtml", "tpl", "tmpl"]
 	Exts []string
 	// Functions that are available for use in the templates.

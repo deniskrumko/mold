@@ -29,6 +29,7 @@ type Config struct {
 	// Path to the layout file.
 	Layout string
 	// Root subdirectory for views and partials.
+	//
 	// NOTE: this is not applicable to the layout path.
 	Root string
 	// Filename extensions for the templates. Only files with the specified extensions

@@ -1,17 +1,27 @@
 package mold
 
 import (
-	"errors"
+	"fmt"
+	"html/template"
 	"text/template/parse"
 )
 
 // processTree traverses the node tree and swaps render and partial declarations with equivalent template calls.
 // It returns all referenced templates encountered during the traversal.
-func processTree(tree *parse.Tree, render, partial bool) ([]string, error) {
-	return processNode(nil, 0, tree.Root, nil, render, partial)
+func processTree(t *template.Template, raw string, render, partial bool) ([]string, error) {
+	ts, err := processNode(nil, 0, t.Tree.Root, nil, render, partial)
+	if err != nil {
+		if err, ok := err.(posErr); ok {
+			line, col := pos(raw, err.pos)
+			return ts, fmt.Errorf("%s:%d:%d: %w", t.Name(), line, col, err)
+		}
+	}
+
+	return ts, nil
 }
 
-func processNode(parent *parse.ListNode,
+func processNode(
+	parent *parse.ListNode,
 	index int,
 	node parse.Node,
 	parentErr error,
@@ -82,7 +92,7 @@ func processActionNode(parent *parse.ListNode, index int, node parse.Node, rende
 			arg = field
 		}
 		if name == "" {
-			return errors.New("partial: name is missing")
+			return posErr{pos: int(actionNode.Pos), message: `partial: path to partial file is not specified`}
 		}
 	case funcName == renderFunc && render:
 		if name == "" {
@@ -125,4 +135,31 @@ func getActionArgs(cmd *parse.CommandNode) (fn, file string, field *parse.FieldN
 		}
 	}
 	return
+}
+
+type posErr struct {
+	pos     int
+	message string
+}
+
+func (p posErr) Error() string {
+	return p.message
+}
+
+func pos(body string, pos int) (line int, col int) {
+	line = 1
+	col = 1
+	for i, char := range body {
+		if i >= pos {
+			break
+		}
+
+		if char == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+	}
+	return line, col
 }

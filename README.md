@@ -100,8 +100,10 @@ By default, the view's data context is used.
 
 Nothing! It is good at what it does.
 
-However, Go templates, while simple and powerful, can be unfamiliar when dealing with multiple files.
-Mold provides a more intuitive and familiar higher-level usage, without reinventing the wheel.
+However, Go templates, while simple and powerful, can be unfamiliar when dealing with multiple template files.
+
+Mold on the other hand provides a more intuitive and conventional higher-level usage for dealing
+with multiple template files, without reinventing the wheel.
 
 ## License
 

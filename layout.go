@@ -26,10 +26,10 @@ const (
 	partialFunc = "partial"
 )
 
-type tplLayout map[string]*template.Template
+type moldLayout map[string]*template.Template
 
 func newLayout(fsys fs.FS, options *Config) (Layout, error) {
-	t := tplLayout{}
+	m := moldLayout{}
 
 	opt, err := processConfig(fsys, options)
 	if err != nil {
@@ -39,7 +39,7 @@ func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 	root := template.New("root")
 
 	// traverse for all templates
-	tpls, err := t.walk(fsys, root, opt.exts)
+	tpls, err := m.walk(fsys, root, opt.exts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
@@ -72,15 +72,15 @@ func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 		if err != nil {
 			return nil, err
 		}
-		t[tpl.name] = view
+		m[tpl.name] = view
 	}
 
-	return t, nil
+	return m, nil
 }
 
 // Render implements Layout.
-func (t tplLayout) Render(w io.Writer, view string, data any) error {
-	l, ok := t[view]
+func (m moldLayout) Render(w io.Writer, view string, data any) error {
+	l, ok := m[view]
 	if !ok {
 		return ErrNotFound
 	}
@@ -92,48 +92,7 @@ func (t tplLayout) Render(w io.Writer, view string, data any) error {
 	return nil
 }
 
-func parseView(layout, root *template.Template, name, raw string) (*template.Template, error) {
-	l, err := layout.Clone()
-	if err != nil {
-		return nil, fmt.Errorf("error creating layout for view '%s': %w", name, err)
-	}
-
-	body := root.Lookup(name)
-	if body == nil {
-		return nil, ErrNotFound
-	}
-
-	// process template tree for body
-	refs, err := processTree(body, raw, false, true)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing view '%s': %w", name, err)
-	}
-	for _, ref := range refs {
-		tpl := root.Lookup(ref)
-		if tpl == nil {
-			return nil, fmt.Errorf("error parsing template '%s': %w", ref, ErrNotFound)
-		}
-		l.AddParseTree(ref, tpl.Tree)
-	}
-
-	// add defined templates to the layout
-	for _, tpl := range body.Templates() {
-		tplName := tpl.Name()
-		if tplName == name {
-			tplName = bodySection
-		}
-		l.AddParseTree(tplName, tpl.Tree)
-	}
-
-	// check for head or put an empty placeholder if missing
-	if l.Lookup("head") == nil {
-		l.New("head").Parse("")
-	}
-
-	return l, nil
-}
-
-func (t *tplLayout) walk(fsys fs.FS, root *template.Template, exts []string) (ts []struct {
+func (m moldLayout) walk(fsys fs.FS, root *template.Template, exts []string) (ts []struct {
 	name string
 	body string
 }, err error) {
@@ -219,6 +178,47 @@ func processConfig(fsys fs.FS, c *Config) (conf struct {
 	}
 
 	return conf, nil
+}
+
+func parseView(layout, root *template.Template, name, raw string) (*template.Template, error) {
+	l, err := layout.Clone()
+	if err != nil {
+		return nil, fmt.Errorf("error creating layout for view '%s': %w", name, err)
+	}
+
+	body := root.Lookup(name)
+	if body == nil {
+		return nil, ErrNotFound
+	}
+
+	// process template tree for body
+	refs, err := processTree(body, raw, false, true)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing view '%s': %w", name, err)
+	}
+	for _, ref := range refs {
+		tpl := root.Lookup(ref)
+		if tpl == nil {
+			return nil, fmt.Errorf("error parsing template '%s': %w", ref, ErrNotFound)
+		}
+		l.AddParseTree(ref, tpl.Tree)
+	}
+
+	// add defined templates to the layout
+	for _, tpl := range body.Templates() {
+		tplName := tpl.Name()
+		if tplName == name {
+			tplName = bodySection
+		}
+		l.AddParseTree(tplName, tpl.Tree)
+	}
+
+	// check for head or put an empty placeholder if missing
+	if l.Lookup("head") == nil {
+		l.New("head").Parse("")
+	}
+
+	return l, nil
 }
 
 func readFile(fsys fs.FS, name string) (string, error) {

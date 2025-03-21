@@ -44,7 +44,7 @@ They define the common elements that are shared across multiple views,
 such as headers, footers, navigation menus, stylesheets e.t.c.
 
 Inside a layout, calling `render` without an argument inserts the view's content into the layout's body.
-To render a specific named section, pass the section's name as an argument.
+To render a specific section, pass the section's name as an argument.
 
 ```html
 <!DOCTYPE html>
@@ -71,8 +71,8 @@ layout, err := mold.NewWithConfig(config)
 
 Views are templates that generate the content that is inserted into the body of layouts.
 
-Views support named sections, allowing content to be rendered in specific parts of the layout.
-The `head` section is in the default layout merely as a convention, a section can be given any name.
+Sections can also be defined within views, allowing content to be rendered in specific parts of the layout.
+The `head` section in the default layout is a named section.
 
 ```html
 {{define "scripts"}}
@@ -83,7 +83,7 @@ The `head` section is in the default layout merely as a convention, a section ca
 ### Partials
 
 Partials are reusable template snippets that allow you to break down complex views into smaller, manageable components.
-They can be used to encapsulate and reuse common logic across multiple views and layouts.
+Ideal for sharing common logic across multiple views and layouts.
 
 ```html
 {{ partial "path/to/partial.html" }}
@@ -96,9 +96,11 @@ By default, the view's data context is used.
 {{ partial "partials/user_session.html" .User }}
 ```
 
-## Why?
+## What is wrong with Go templates?
 
-Go templates, while simple and powerful, can be unfamiliar when dealing with multiple files.
+Nothing! It is good at what it does.
+
+However, Go templates, while simple and powerful, can be unfamiliar when dealing with multiple files.
 Mold provides a more intuitive and familiar higher-level usage, without reinventing the wheel.
 
 ## License
@@ -107,4 +109,5 @@ MIT
 
 ## Sponsoring
 
-You can support the author by donating on [Github Sponsors](https://github.com/sponsors/abiosoft) or [Buy me a coffee](https://www.buymeacoffee.com/abiosoft).
+You can support the author by donating on [Github Sponsors](https://github.com/sponsors/abiosoft)
+or [Buy me a coffee](https://www.buymeacoffee.com/abiosoft).

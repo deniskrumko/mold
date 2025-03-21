@@ -57,16 +57,21 @@ func processNode(
 			}
 		}
 	}
-	if l, ok := node.(*parse.ListNode); ok {
+
+	if w, ok := node.(*parse.WithNode); ok && w != nil {
+		appendResult(processNode(parent, index, w.List, err, render, partial))
+		appendResult(processNode(parent, index, w.ElseList, err, render, partial))
+	}
+	if l, ok := node.(*parse.ListNode); ok && l != nil {
 		for i, n := range l.Nodes {
 			appendResult(processNode(l, i, n, err, render, partial))
 		}
 	}
-	if i, ok := node.(*parse.IfNode); ok {
+	if i, ok := node.(*parse.IfNode); ok && i != nil {
 		appendResult(processNode(parent, index, i.List, err, render, partial))
 		appendResult(processNode(parent, index, i.ElseList, err, render, partial))
 	}
-	if r, ok := node.(*parse.RangeNode); ok {
+	if r, ok := node.(*parse.RangeNode); ok && r != nil {
 		appendResult(processNode(parent, index, r.List, err, render, partial))
 		appendResult(processNode(parent, index, r.ElseList, err, render, partial))
 	}

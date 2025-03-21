@@ -30,10 +30,10 @@ type (
 	moldLayout  templateSet
 )
 
-func newLayout(fsys fs.FS, options *Config) (Layout, error) {
+func newLayout(fsys fs.FS, c *Config) (Layout, error) {
 	m := moldLayout{}
 
-	opt, err := setup(fsys, options)
+	opt, err := setup(fsys, c)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
@@ -144,25 +144,25 @@ func setup(fsys fs.FS, c *Config) (conf struct {
 	if c == nil {
 		return conf, nil
 	}
-	if c.Root != "" {
-		sub, err := fs.Sub(fsys, c.Root)
+	if c.root != "" {
+		sub, err := fs.Sub(fsys, c.root)
 		if err != nil {
-			return conf, fmt.Errorf("error setting subdirectory '%s': %w", c.Root, err)
+			return conf, fmt.Errorf("error setting subdirectory '%s': %w", c.root, err)
 		}
 		conf.fs = sub
 	}
-	if c.Layout != "" {
-		f, err := readFile(conf.fs, c.Layout)
+	if c.layout != "" {
+		f, err := readFile(conf.fs, c.layout)
 		if err != nil {
-			return conf, fmt.Errorf("error reading layout file '%s': %w", c.Layout, err)
+			return conf, fmt.Errorf("error reading layout file '%s': %w", c.layout, err)
 		}
 		conf.layout.body = f
-		conf.layout.name = c.Layout
+		conf.layout.name = c.layout
 	}
-	if len(c.Exts) > 0 {
-		conf.exts = c.Exts
+	if len(c.exts) > 0 {
+		conf.exts = c.exts
 	}
-	for k, f := range c.FuncMap {
+	for k, f := range c.funcMap {
 		conf.funcMap[k] = f
 	}
 

@@ -26,29 +26,41 @@ type Layout interface {
 
 // Config is the configuration for a new [Layout].
 type Config struct {
-	// Root subdirectory.
-	Root string
-	// Path to the layout file.
-	Layout string
-	// Filename extensions for the templates. Only files with the specified extensions
-	// would be parsed.
-	//
-	// Default: ["html", "gohtml", "tpl", "tmpl"]
-	Exts []string
-	// Functions that are available for use in the templates.
-	FuncMap template.FuncMap
+	root    string
+	layout  string
+	exts    []string
+	funcMap template.FuncMap
 }
+
+// Option is a configuration option.
+type Option func(*Config)
 
 // ErrNotFound is returned when a template is not found.
 var ErrNotFound = errors.New("template not found")
 
 // New creates a new Layout with fs as the underlying filesystem.
-func New(fs fs.FS) (Layout, error) {
-	return newLayout(fs, nil)
-}
+//
+//	//go:embed web
+//	var dir embed.FS
+//	layout, err := mold.New(dir)
+//
+// To use a directory on the filesystem.
+//
+//	var dir os.DirFS("web")
+//	layout, err := mold.New(dir)
+//
+// To specify options. e.g. custom layout
+//
+//	layout, err := mold.New(fs, mold.WithLayout("layout.html"))
+func New(fs fs.FS, options ...Option) (Layout, error) {
+	if len(options) == 0 {
+		return newLayout(fs, nil)
+	}
 
-// NewWithConfig is like [New] with support for config.
-func NewWithConfig(fs fs.FS, c Config) (Layout, error) {
+	var c Config
+	for _, opt := range options {
+		opt(&c)
+	}
 	return newLayout(fs, &c)
 }
 
@@ -62,3 +74,18 @@ func Must(l Layout, err error) Layout {
 	}
 	return l
 }
+
+// WithRoot configures the root subdirectory.
+func WithRoot(root string) Option { return func(c *Config) { c.root = root } }
+
+// WithLayout configures the path to the layout file.
+func WithLayout(layout string) Option { return func(c *Config) { c.layout = layout } }
+
+// WithExts configures the filename extensions for the templates.
+// Only files with the specified extensions would be parsed.
+//
+//	Default: ["html", "gohtml", "tpl", "tmpl"]
+func WithExts(exts []string) Option { return func(c *Config) { c.exts = exts } }
+
+// WithFuncMap sets custom Go template functions available for use in templates.
+func WithFuncMap(funcMap template.FuncMap) Option { return func(c *Config) { c.funcMap = funcMap } }

@@ -4,7 +4,7 @@ Mold builds on [Go templates](https://pkg.go.dev/text/template) to provide a sim
 
 ## Getting Started
 
-### 1. Create a template file
+### 1. Create a view file
 
 Create an HTML file named `index.html`.
 
@@ -18,7 +18,7 @@ Create an HTML file named `index.html`.
 
 ### 2. Render
 
-Create and render the layout in an HTTP handler.
+Create a new Mold layout and render the view in an HTTP handler.
 
 ```go
 //go:embed index.html
@@ -70,8 +70,8 @@ layout, err := mold.NewWithConfig(config)
 ### Views
 
 Views are templates that generate the content that is inserted into the body of layouts.
-Views support named sections, allowing content to be rendered in specific parts of the layout.
 
+Views support named sections, allowing content to be rendered in specific parts of the layout.
 The `head` section is in the default layout merely as a convention, a section can be given any name.
 
 ```html
@@ -104,3 +104,7 @@ Mold provides a more intuitive and familiar higher-level usage, without reinvent
 ## License
 
 MIT
+
+## Sponsoring
+
+You can support the author by donating on [Github Sponsors](https://github.com/sponsors/abiosoft) or [Buy me a coffee](https://www.buymeacoffee.com/abiosoft).

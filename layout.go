@@ -31,26 +31,26 @@ func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
+
+	root := template.New("root")
 	t := &tplLayout{
-		fs:   opt.fs,
-		root: template.New("root"),
-		set:  map[string]*template.Template{},
+		set: map[string]*template.Template{},
 	}
 
 	// traverse for all templates
-	tpls, err := t.walk(opt.exts)
+	tpls, err := t.walk(fsys, root, opt.exts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 
 	// parse layout template
-	t.layout, err = template.New("layout").Funcs(opt.funcMap).Parse(opt.layout)
+	layout, err := template.New("layout").Funcs(opt.funcMap).Parse(opt.layout)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 
 	// process template tree for layout
-	refs, err := processTree(t.layout, opt.layout, true, true)
+	refs, err := processTree(layout, opt.layout, true, true)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
@@ -58,16 +58,16 @@ func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 		if ref == bodySection || ref == headSection {
 			continue
 		}
-		tpl := t.root.Lookup(ref)
+		tpl := root.Lookup(ref)
 		if tpl == nil {
 			return nil, fmt.Errorf("error parsing template '%s': %w", ref, ErrNotFound)
 		}
-		t.layout.AddParseTree(ref, tpl.Tree)
+		layout.AddParseTree(ref, tpl.Tree)
 	}
 
 	// process views
 	for _, tpl := range tpls {
-		view, err := parseView(t.layout, t.root, tpl.name, tpl.body)
+		view, err := parseView(layout, root, tpl.name, tpl.body)
 		if err != nil {
 			return nil, err
 		}
@@ -78,11 +78,6 @@ func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 }
 
 type tplLayout struct {
-	fs fs.FS
-
-	layout *template.Template
-	root   *template.Template
-
 	set map[string]*template.Template
 }
 
@@ -141,11 +136,11 @@ func parseView(layout, root *template.Template, name, raw string) (*template.Tem
 	return l, nil
 }
 
-func (t *tplLayout) walk(exts []string) (ts []struct {
+func (t *tplLayout) walk(fsys fs.FS, root *template.Template, exts []string) (ts []struct {
 	name string
 	body string
 }, err error) {
-	err = fs.WalkDir(t.fs, ".", func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -167,15 +162,15 @@ func (t *tplLayout) walk(exts []string) (ts []struct {
 			return nil
 		}
 
-		f, err := readFile(t.fs, path)
+		f, err := readFile(fsys, path)
 		if err != nil {
 			return err
 		}
 
-		if nt, err := t.root.New(path).Funcs(placeholderFuncs).Parse(f); err != nil {
+		if nt, err := root.New(path).Funcs(placeholderFuncs).Parse(f); err != nil {
 			return fmt.Errorf("error parsing template '%s': %w", path, err)
 		} else {
-			*t.root = *nt
+			*root = *nt
 			ts = append(ts, struct {
 				name string
 				body string

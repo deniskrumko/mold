@@ -89,6 +89,13 @@ They can be used to encapsulate and reuse common logic across multiple views and
 {{ partial "path/to/partial.html" }}
 ```
 
+An optional second argument allows customizing the data passed to the partial.
+By default, the view's data context is used.
+
+```html
+{{ partial "partials/user_session.html" .User }}
+```
+
 ## Why?
 
 Go templates, while simple and powerful, can be unfamiliar when dealing with multiple files.

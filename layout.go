@@ -26,16 +26,17 @@ const (
 	partialFunc = "partial"
 )
 
+type tplLayout map[string]*template.Template
+
 func newLayout(fsys fs.FS, options *Config) (Layout, error) {
+	t := tplLayout{}
+
 	opt, err := processConfig(fsys, options)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new layout: %w", err)
 	}
 
 	root := template.New("root")
-	t := &tplLayout{
-		set: map[string]*template.Template{},
-	}
 
 	// traverse for all templates
 	tpls, err := t.walk(fsys, root, opt.exts)
@@ -71,19 +72,15 @@ func newLayout(fsys fs.FS, options *Config) (Layout, error) {
 		if err != nil {
 			return nil, err
 		}
-		t.set[tpl.name] = view
+		t[tpl.name] = view
 	}
 
 	return t, nil
 }
 
-type tplLayout struct {
-	set map[string]*template.Template
-}
-
 // Render implements Layout.
-func (t *tplLayout) Render(w io.Writer, view string, data any) error {
-	l, ok := t.set[view]
+func (t tplLayout) Render(w io.Writer, view string, data any) error {
+	l, ok := t[view]
 	if !ok {
 		return ErrNotFound
 	}

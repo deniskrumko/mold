@@ -1,0 +1,16 @@
+{{define "scripts"}}
+<script src="//unpkg.com/alpinejs" defer></script>
+{{end}}
+
+<h3>Script</h3>
+
+<p>
+    This page includes AlpineJS file.
+</p>
+
+<div x-data="{ message: '' }">
+    <input type="text" x-model="message" placeholder="Enter text here">
+    <div>
+        Your input is: <span x-text="message"></span>
+    </div>
+</div>

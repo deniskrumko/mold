@@ -1,16 +1,35 @@
 package mold
 
-import "text/template/parse"
+import (
+	"errors"
+	"text/template/parse"
+)
 
 // processTree traverses the node tree and swaps render and partial declarations with equivalent template calls.
 // It returns all referenced templates encountered during the traversal.
-func processTree(parent *parse.ListNode, index int, node parse.Node, render, partial bool) []string {
-	var ts []string
+func processTree(parent *parse.ListNode, index int, node parse.Node, parentErr error, render, partial bool) (ts []string, err error) {
+	// quit early if error occurs in the parent iteration
+	if parentErr != nil {
+		return ts, parentErr
+	}
+
+	// add only appends if there are no errors
+	add := func(t []string, err1 error) {
+		if err1 != nil {
+			err = err1
+		}
+		if err == nil {
+			ts = append(ts, t...)
+		}
+	}
+
 	if a, ok := node.(*parse.ActionNode); ok {
 		if len(a.Pipe.Cmds) > 0 {
 			funcName, tname, _ := getActionArgs(a.Pipe.Cmds[0])
 			if funcName == renderFunc || funcName == partialFunc {
-				processActionNode(parent, index, node, render, partial)
+				if err := processActionNode(parent, index, node, render, partial); err != nil {
+					return ts, err
+				}
 			}
 			if tname != "" {
 				ts = append(ts, tname)
@@ -19,22 +38,22 @@ func processTree(parent *parse.ListNode, index int, node parse.Node, render, par
 	}
 	if l, ok := node.(*parse.ListNode); ok {
 		for i, n := range l.Nodes {
-			ts = append(ts, processTree(l, i, n, render, partial)...)
+			add(processTree(l, i, n, err, render, partial))
 		}
 	}
 	if i, ok := node.(*parse.IfNode); ok {
-		ts = append(ts, processTree(parent, index, i.List, render, partial)...)
-		ts = append(ts, processTree(parent, index, i.ElseList, render, partial)...)
+		add(processTree(parent, index, i.List, err, render, partial))
+		add(processTree(parent, index, i.ElseList, err, render, partial))
 	}
 	if r, ok := node.(*parse.RangeNode); ok {
-		ts = append(ts, processTree(parent, index, r.List, render, partial)...)
-		ts = append(ts, processTree(parent, index, r.ElseList, render, partial)...)
+		add(processTree(parent, index, r.List, err, render, partial))
+		add(processTree(parent, index, r.ElseList, err, render, partial))
 	}
 
-	return ts
+	return ts, err
 }
 
-func processActionNode(parent *parse.ListNode, index int, node parse.Node, render, partial bool) {
+func processActionNode(parent *parse.ListNode, index int, node parse.Node, render, partial bool) error {
 	if parent == nil {
 		// this should never happen
 		panic("parent node is nil")
@@ -52,12 +71,15 @@ func processActionNode(parent *parse.ListNode, index int, node parse.Node, rende
 		if field != nil {
 			arg = field
 		}
+		if name == "" {
+			return errors.New("partial: name is missing")
+		}
 	case funcName == renderFunc && render:
 		if name == "" {
 			name = "body"
 		}
 	default:
-		return
+		return nil
 	}
 
 	cmd.Args = []parse.Node{arg}
@@ -73,6 +95,7 @@ func processActionNode(parent *parse.ListNode, index int, node parse.Node, rende
 
 	// replace the action node with a template node.
 	parent.Nodes[index] = tn
+	return nil
 }
 
 func getActionArgs(cmd *parse.CommandNode) (fn, file string, field *parse.FieldNode) {

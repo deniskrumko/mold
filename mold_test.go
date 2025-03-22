@@ -25,6 +25,17 @@ func createTestFS(extraFiles ...testFile) fs.FS {
 	return mapFS
 }
 
+func TestNew_Panic(t *testing.T) {
+	defer func() {
+		if err := recover(); err == nil {
+			t.Errorf("Must() expected panic, got nil")
+		}
+	}()
+
+	testFS := createTestFS(testFile{"parse.html", "{{partial}}"})
+	Must(New(testFS))
+}
+
 func TestRender(t *testing.T) {
 	testFS := createTestFS()
 

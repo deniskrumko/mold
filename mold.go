@@ -7,10 +7,13 @@ import (
 	"io/fs"
 )
 
-// Layout represents a web page structure, incorporating a specific view.
-// It encapsulates the body and other sections and inserts the dynamic content of a view
-// into a designated area.
-type Layout interface {
+// Engine represents a web page renderer, incorporating a specific layout.
+// It provides a flexible way to generate web pages by combining views with a
+// predefined layout structure.
+//
+// The layout defines the overall page structure,
+// while views provide the dynamic content.
+type Engine interface {
 	// Render executes the layout template, merging it with the specified view template,
 	// then writes the resulting HTML to the provided io.Writer.
 	//
@@ -24,7 +27,7 @@ type Layout interface {
 	Render(w io.Writer, view string, data any) error
 }
 
-// Config is the configuration for a new [Layout].
+// Config is the configuration for a new [Engine].
 type Config struct {
 	root    string
 	layout  string
@@ -44,36 +47,36 @@ var ErrNotFound = errors.New("template not found")
 //
 //	//go:embed web
 //	var dir embed.FS
-//	var layout, err = mold.New(dir)
+//	var engine, err = mold.New(dir)
 //
 // To use a directory on the filesystem.
 //
 //	var dir = os.DirFS("web")
-//	var layout, err = mold.New(dir)
+//	var engine, err = mold.New(dir)
 //
 // To specify option(s) e.g. a custom layout file.
 //
 //	option := mold.WithLayout("layout.html")
-//	layout, err := mold.New(fs, option)
-func New(fs fs.FS, options ...Option) (Layout, error) {
+//	engine, err := mold.New(fs, option)
+func New(fs fs.FS, options ...Option) (Engine, error) {
 	if len(options) == 0 {
-		return newLayout(fs, nil)
+		return newEngine(fs, nil)
 	}
 
 	var c Config
 	for _, opt := range options {
 		opt(&c)
 	}
-	return newLayout(fs, &c)
+	return newEngine(fs, &c)
 }
 
-// Must is a helper that wraps a call to a function returning ([Layout], error)
+// Must is a helper that wraps a call to a function returning ([Engine], error)
 // and panics if the error is non-nil.
 //
 // Example:
 //
-//	layout := mold.Must(mold.New(fs))
-func Must(l Layout, err error) Layout {
+//	engine := mold.Must(mold.New(fs))
+func Must(l Engine, err error) Engine {
 	if err != nil {
 		panic(err)
 	}
@@ -89,7 +92,7 @@ func Must(l Layout, err error) Layout {
 //	    mold.WithRoot("web"),
 //	    mold.WithExt("html"),
 //	)
-//	layout := mold.New(dir, options)
+//	engine := mold.New(dir, options)
 func With(opts ...Option) Option {
 	return func(c *Config) {
 		for _, opt := range opts {

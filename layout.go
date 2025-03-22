@@ -27,11 +27,11 @@ const (
 
 type (
 	templateSet map[string]*template.Template
-	moldLayout  templateSet
+	moldEngine  templateSet
 )
 
-func newLayout(fsys fs.FS, c *Config) (Layout, error) {
-	m := moldLayout{}
+func newEngine(fsys fs.FS, c *Config) (Engine, error) {
+	m := moldEngine{}
 
 	opt, err := setup(fsys, c)
 	if err != nil {
@@ -67,20 +67,20 @@ func newLayout(fsys fs.FS, c *Config) (Layout, error) {
 }
 
 // Render implements Layout.
-func (m moldLayout) Render(w io.Writer, view string, data any) error {
-	l, ok := m[view]
+func (m moldEngine) Render(w io.Writer, view string, data any) error {
+	layout, ok := m[view]
 	if !ok {
 		return ErrNotFound
 	}
 
-	if err := l.Execute(w, data); err != nil {
+	if err := layout.Execute(w, data); err != nil {
 		return fmt.Errorf("error rendering '%s': %w", view, err)
 	}
 
 	return nil
 }
 
-func (m moldLayout) walk(fsys fs.FS, exts []string) (root templateSet, ts []templateFile, err error) {
+func (m moldEngine) walk(fsys fs.FS, exts []string) (root templateSet, ts []templateFile, err error) {
 	root = templateSet{}
 	err = fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

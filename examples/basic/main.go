@@ -11,7 +11,7 @@ import (
 
 //go:embed *.html partials
 var dir embed.FS
-var layout = mold.Must(mold.New(dir))
+var engine = mold.Must(mold.New(dir))
 
 func main() {
 	handler := http.HandlerFunc(handler)
@@ -32,7 +32,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := layout.Render(w, "index.html", data); err != nil {
+	if err := engine.Render(w, "index.html", data); err != nil {
 		log.Println("error during render:", err)
 	}
 }

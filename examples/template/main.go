@@ -14,7 +14,7 @@ var options = mold.With(
 	mold.WithRoot("web"),
 	mold.WithLayout("layouts/layout.html"),
 )
-var layout = mold.Must(mold.New(dir, options))
+var engine = mold.Must(mold.New(dir, options))
 
 func main() {
 	http.Handle("/", http.HandlerFunc(handleIndex))
@@ -23,9 +23,9 @@ func main() {
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
-	layout.Render(w, "pages/index.html", nil)
+	engine.Render(w, "pages/index.html", nil)
 }
 
 func handleNoScript(w http.ResponseWriter, r *http.Request) {
-	layout.Render(w, "pages/noscript.html", nil)
+	engine.Render(w, "pages/noscript.html", nil)
 }

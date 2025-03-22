@@ -35,7 +35,8 @@ type Config struct {
 	funcMap template.FuncMap
 }
 
-// Option is a configuration option.
+// Option is a configuration option for a new [Engine].
+// It is passed as argument(s) to [New].
 type Option func(*Config)
 
 // ErrNotFound is returned when a template is not found.

@@ -1,6 +1,8 @@
 # Mold
 
-[![Go](https://github.com/abiosoft/mold/actions/workflows/go.yml/badge.svg)](https://github.com/abiosoft/mold/actions/workflows/go.yml)
+[![Build Status](https://github.com/abiosoft/mold/actions/workflows/go.yml/badge.svg)](https://github.com/abiosoft/mold/actions/workflows/go.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/abiosoft/mold)](https://goreportcard.com/report/github.com/abiosoft/mold)
+[![Package Documentation](https://pkg.go.dev/badge/github.com/abiosoft/mold)](https://pkg.go.dev/github.com/abiosoft/mold)
 
 Mold builds on [Go templates](https://pkg.go.dev/text/template) to provide a simple and familiar API for rendering web pages.
 

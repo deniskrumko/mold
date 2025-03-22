@@ -18,13 +18,13 @@ Create an HTML file named `index.html`.
 
 ### 2. Render
 
-Create a new Mold layout and render the view in an HTTP handler.
+Create a new instance and render the view in an HTTP handler.
 
 ```go
 //go:embed index.html
 var dir embed.FS
 
-var layout, _ = mold.New(dir)
+var engine, _ = mold.New(dir)
 
 func handle(w http.ResponseWriter, r *http.Request){
     layout.Render(w, "index.html", nil)
@@ -43,7 +43,7 @@ Layouts provide the overall structure for your web pages.
 They define the common elements that are shared across multiple views,
 such as headers, footers, navigation menus, stylesheets e.t.c.
 
-Inside a layout, calling `render` without an argument inserts the view's content into the layout's body.
+Inside a engine, calling `render` without an argument inserts the view's content into the layout's body.
 To render a specific section, pass the section's name as an argument.
 
 ```html
@@ -62,7 +62,7 @@ by creating a custom layout file and specifying it as an option for a new instan
 
 ```go
 option := mold.WithLayout("path/to/layout.html")
-layout, err := mold.New(fs, option)
+engine, err := mold.New(fs, option)
 ```
 
 ### Views

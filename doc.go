@@ -51,7 +51,7 @@ The path to the view file is passed to the rendering engine to produce HTML outp
 Sections allow content to be rendered in specific parts of the layout.
 They are defined within views with the "define" block.
 
-The default template includes the "head" section for inserting content into the "<head>" tag.
+The default layout is able to render HTML content within the "<head>" tag by utilising the "head" section.
 
 	{{define "scripts"}}
 	<script src="//unpkg.com/alpinejs" defer></script>

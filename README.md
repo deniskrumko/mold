@@ -61,7 +61,8 @@ The [default](https://github.com/abiosoft/mold/blob/main/layout.html) layout can
 by creating a custom layout file and specifying it as an option for a new instance.
 
 ```go
-layout, err := mold.New(fs, mold.WithLayout("path/to/layout.html"))
+option := mold.WithLayout("path/to/layout.html")
+layout, err := mold.New(fs, option)
 ```
 
 ### Views

@@ -50,10 +50,10 @@ To render a specific section, pass the section's name as an argument.
 <!DOCTYPE html>
 <html>
 <head>
-    {{ render "head" }}
+    {{render "head"}}
 </head>
 <body>
-    {{ render }}
+    {{render}}
 </body>
 </html>
 ```
@@ -82,10 +82,10 @@ engine.Render(w, "path/to/view.html", nil)
 
 ### Sections
 
-Sections allows content to be rendered in specific parts of the layout.
+Sections allow content to be rendered in specific parts of the layout.
 They are defined within views with the `define` block.
 
-The default template includes the `head` section.
+The default template includes the `head` section for inserting content into the `<head>` tag.
 
 ```html
 {{define "scripts"}}
@@ -101,14 +101,14 @@ They are supported in both views and layouts with the `partial` function.
 Partials are ideal sharing common logic across multiple views and layouts.
 
 ```html
-{{ partial "path/to/partial.html" }}
+{{partial "path/to/partial.html"}}
 ```
 
 An optional second argument allows customizing the data passed to the partial.
 By default, the view's data context is used.
 
 ```html
-{{ partial "partials/user_session.html" .User }}
+{{partial "partials/user_session.html" .User}}
 ```
 
 ## Why not standard Go templates?

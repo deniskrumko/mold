@@ -144,7 +144,7 @@ func getActionArgs(cmd *parse.CommandNode) (fn, file string, field *parse.FieldN
 	return
 }
 
-// posErr tracks the position in the layout file when a parse error occurs.
+// posErr tracks the position in the template file when a parse error occurs.
 type posErr struct {
 	pos     int
 	message string

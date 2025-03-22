@@ -29,10 +29,14 @@ type Engine interface {
 
 // Config is the configuration for a new [Engine].
 type Config struct {
-	root    string
-	layout  string
-	exts    []string
-	funcMap template.FuncMap
+	fs         fs.FS
+	layoutFile templateFile
+
+	// options
+	root    optionVal[string]
+	layout  optionVal[string]
+	exts    optionVal[[]string]
+	funcMap optionVal[template.FuncMap]
 }
 
 // Option is a configuration option for a new [Engine].
@@ -60,15 +64,7 @@ var ErrNotFound = errors.New("template not found")
 //	option := mold.WithLayout("layout.html")
 //	engine, err := mold.New(fs, option)
 func New(fs fs.FS, options ...Option) (Engine, error) {
-	if len(options) == 0 {
-		return newEngine(fs, nil)
-	}
-
-	var c Config
-	for _, opt := range options {
-		opt(&c)
-	}
-	return newEngine(fs, &c)
+	return newEngine(fs, options...)
 }
 
 // Must is a helper that wraps a call to a function returning ([Engine], error)
@@ -103,16 +99,24 @@ func With(opts ...Option) Option {
 }
 
 // WithRoot configures the base directory from which template files are loaded.
-func WithRoot(subdir string) Option { return func(c *Config) { c.root = subdir } }
+func WithRoot(subdir string) Option {
+	return func(c *Config) { c.root = newVal(subdir) }
+}
 
 // WithLayout configures the path to the layout file.
-func WithLayout(layout string) Option { return func(c *Config) { c.layout = layout } }
+func WithLayout(layout string) Option {
+	return func(c *Config) { c.layout = newVal(layout) }
+}
 
 // WithExt configures the filename extensions for the templates.
 // Only files with the specified extensions would be parsed.
 //
 //	Default: ["html", "gohtml", "tpl", "tmpl"]
-func WithExt(exts ...string) Option { return func(c *Config) { c.exts = exts } }
+func WithExt(exts ...string) Option {
+	return func(c *Config) { c.exts = newVal(exts) }
+}
 
 // WithFuncMap configures the custom Go template functions.
-func WithFuncMap(funcMap template.FuncMap) Option { return func(c *Config) { c.funcMap = funcMap } }
+func WithFuncMap(funcMap template.FuncMap) Option {
+	return func(c *Config) { c.funcMap = newVal(funcMap) }
+}

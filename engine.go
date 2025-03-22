@@ -30,22 +30,24 @@ type (
 	moldEngine  templateSet
 )
 
-func newEngine(fsys fs.FS, c *Config) (Engine, error) {
-	m := moldEngine{}
-
-	opt, err := setup(fsys, c)
-	if err != nil {
+func newEngine(fsys fs.FS, options ...Option) (Engine, error) {
+	c := Config{
+		fs: fsys,
+	}
+	if err := setup(&c, options...); err != nil {
 		return nil, fmt.Errorf("error creating new engine: %w", err)
 	}
 
+	m := moldEngine{}
+
 	// traverse to fetch all templates and populate the root template.
-	root, ts, err := m.walk(opt.fs, opt.exts)
+	root, ts, err := walk(c.fs, c.exts.val)
 	if err != nil {
 		return nil, fmt.Errorf("error creating new engine: %w", err)
 	}
 
 	// process layout
-	layout, err := parseLayout(root, opt.layout, opt.funcMap)
+	layout, err := parseLayout(root, c.layoutFile, c.funcMap.val)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing layout: %w", err)
 	}
@@ -53,7 +55,7 @@ func newEngine(fsys fs.FS, c *Config) (Engine, error) {
 	// process views
 	for _, t := range ts {
 		// ignore layout file
-		if t.name == opt.layout.name {
+		if t.name == c.layoutFile.name {
 			continue
 		}
 		view, err := parseView(root, layout, t.name, t.body)
@@ -80,7 +82,7 @@ func (m moldEngine) Render(w io.Writer, view string, data any) error {
 	return nil
 }
 
-func (m moldEngine) walk(fsys fs.FS, exts []string) (root templateSet, ts []templateFile, err error) {
+func walk(fsys fs.FS, exts []string) (root templateSet, ts []templateFile, err error) {
 	root = templateSet{}
 	err = fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -122,51 +124,53 @@ func (m moldEngine) walk(fsys fs.FS, exts []string) (root templateSet, ts []temp
 	return
 }
 
-type templateFile struct {
-	name string
-	body string
-}
-
-func setup(fsys fs.FS, c *Config) (conf struct {
-	layout  templateFile
-	funcMap template.FuncMap
-	exts    []string
-	cache   bool
-	fs      fs.FS
-}, err error) {
-	// defaults
-	conf.layout.body = defaultLayout
-	conf.layout.name = "default_layout"
-	conf.exts = defaultExts
-	conf.fs = fsys
-	conf.funcMap = placeholderFuncs
-
+func setup(c *Config, options ...Option) error {
 	if c == nil {
-		return conf, nil
-	}
-	if c.root != "" {
-		sub, err := fs.Sub(fsys, c.root)
-		if err != nil {
-			return conf, fmt.Errorf("error setting subdirectory '%s': %w", c.root, err)
-		}
-		conf.fs = sub
-	}
-	if c.layout != "" {
-		f, err := readFile(conf.fs, c.layout)
-		if err != nil {
-			return conf, fmt.Errorf("error reading layout file '%s': %w", c.layout, err)
-		}
-		conf.layout.body = f
-		conf.layout.name = c.layout
-	}
-	if len(c.exts) > 0 {
-		conf.exts = c.exts
-	}
-	for k, f := range c.funcMap {
-		conf.funcMap[k] = f
+		return fmt.Errorf("invalid config: config is nil")
 	}
 
-	return conf, nil
+	// apply options
+	for _, opt := range options {
+		opt(c)
+	}
+
+	// root
+	if c.root.set {
+		sub, err := fs.Sub(c.fs, c.root.val)
+		if err != nil {
+			return fmt.Errorf("error setting subdirectory '%s': %w", c.root.val, err)
+		}
+		c.fs = sub
+	}
+
+	// layout
+	if c.layout.set {
+		f, err := readFile(c.fs, c.layout.val)
+		if err != nil {
+			return fmt.Errorf("error reading layout file '%s': %w", c.layout.val, err)
+		}
+		c.layoutFile.body = f
+		c.layoutFile.name = c.layout.val
+	} else {
+		c.layoutFile.body = defaultLayout
+		c.layoutFile.name = "default_layout"
+	}
+
+	// extensions
+	if !c.exts.set {
+		c.exts.update(defaultExts)
+	}
+
+	// funcMap
+	funcMap := placeholderFuncs
+	if c.funcMap.set {
+		for k, f := range c.funcMap.val {
+			funcMap[k] = f
+		}
+	}
+	c.funcMap.update(funcMap)
+
+	return nil
 }
 
 func parseLayout(root templateSet, t templateFile, funcMap template.FuncMap) (*template.Template, error) {
@@ -256,4 +260,22 @@ func validExt(exts []string, ext string) bool {
 var placeholderFuncs = map[string]any{
 	renderFunc.String():  func(...string) string { return "" },
 	partialFunc.String(): func(string, ...any) string { return "" },
+}
+
+type templateFile struct {
+	name string
+	body string
+}
+
+type optionVal[T any] struct {
+	val T
+	set bool
+}
+
+func newVal[T any](val T) optionVal[T] {
+	return optionVal[T]{val: val, set: true}
+}
+
+func (o *optionVal[T]) update(val T) {
+	o.val = val
 }

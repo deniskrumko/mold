@@ -248,8 +248,12 @@ func validExt(exts []string, ext string) bool {
 		return false
 	}
 
+	sanitize := func(ext string) string {
+		return strings.ToLower(strings.TrimPrefix(ext, "."))
+	}
+
 	for _, e := range exts {
-		if strings.TrimPrefix(e, ".") == strings.TrimPrefix(ext, ".") {
+		if sanitize(e) == sanitize(ext) {
 			return true
 		}
 	}

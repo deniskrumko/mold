@@ -49,7 +49,7 @@ The path to the view file is passed to the rendering engine to produce HTML outp
 	engine.Render(w, "path/to/view.html", nil)
 
 Sections allow content to be rendered in specific parts of the layout.
-They are defined within views with the "define" block.
+They are defined within views with a "define" block.
 
 The default layout is able to render HTML content within the "<head>" tag by utilising the "head" section.
 

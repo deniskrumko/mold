@@ -27,7 +27,7 @@ var dir embed.FS
 var engine, _ = mold.New(dir)
 
 func handle(w http.ResponseWriter, r *http.Request){
-    layout.Render(w, "index.html", nil)
+    engine.Render(w, "index.html", nil)
 }
 ```
 
@@ -68,8 +68,22 @@ engine, err := mold.New(fs, option)
 ### Views
 
 Views are templates that generate the content that is inserted into the body of layouts.
+Typically what you would put in the `<body>` of an HTML page.
 
-Sections can also be defined within views with the `define` block, allowing content to be rendered in specific parts of the layout.
+```html
+<h3>Hello from Mold :)</h3>
+```
+
+The path to the view file is passed to the rendering engine to produce HTML output.
+
+```go
+engine.Render(w, "path/to/view.html", nil)
+```
+
+### Sections
+
+Sections allows content to be rendered in specific parts of the layout.
+They are defined within views with the `define` block.
 
 The default template includes the `head` section.
 
@@ -99,9 +113,7 @@ By default, the view's data context is used.
 
 ## Why not standard Go templates?
 
-Yeah, why not? It excels at what it does.
-
-However, Go templates, while simple and powerful, can be unfamiliar when dealing with multiple template files.
+Go templates, while simple and powerful, can be unfamiliar when dealing with multiple template files.
 
 Mold provides an intuitive and conventional higher-level usage of Go templates for dealing with multiple template files.
 

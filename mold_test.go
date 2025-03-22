@@ -18,11 +18,37 @@ func createTestFS(extraFiles ...testFile) fs.FS {
 		"layout.html":   &fstest.MapFile{Data: []byte(`<html><body>{{render}}<br>{{partial "partial2.html" .Age}}</body></html>`)},
 		"partial.html":  &fstest.MapFile{Data: []byte(`Location: {{.}}`)},
 		"partial2.html": &fstest.MapFile{Data: []byte(`Age: {{.}}`)},
+		"skip.txt":      &fstest.MapFile{},
+		".hidden_file":  &fstest.MapFile{},
+		".hidden/.file": &fstest.MapFile{},
 	}
 	for _, f := range extraFiles {
 		mapFS[f.name] = &fstest.MapFile{Data: []byte(f.data)}
 	}
 	return mapFS
+}
+
+func TestNew(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			t.Errorf("Must() expected no panic, got panic")
+		}
+	}()
+
+	testFS := createTestFS()
+	Must(New(testFS))
+}
+
+func TestNew_Sub(t *testing.T) {
+	testFS := createTestFS(testFile{"web/view.html", `Hello`})
+	Must(New(testFS, WithRoot("web")))
+}
+
+func TestNew_InvalidSub(t *testing.T) {
+	testFS := createTestFS(testFile{"web/view.html", `Hello`})
+	if _, err := New(testFS, WithRoot("invalid")); err == nil {
+		t.Errorf("New() expected error, got nil")
+	}
 }
 
 func TestNew_Panic(t *testing.T) {
@@ -36,6 +62,30 @@ func TestNew_Panic(t *testing.T) {
 	Must(New(testFS))
 }
 
+func TestNew_LayoutNotFound(t *testing.T) {
+	testFS := createTestFS()
+
+	if _, err := New(testFS, WithLayout("missing.html")); err == nil {
+		t.Errorf("New() expected error, got nil")
+	}
+}
+
+func TestNew_LayoutParseError(t *testing.T) {
+	testFS := createTestFS(testFile{"layout.html", "{{partial}}"})
+
+	if _, err := New(testFS, WithLayout("layout.html")); err == nil {
+		t.Errorf("New() expected error, got nil")
+	}
+}
+
+func TestNew_ViewParseError(t *testing.T) {
+	testFS := createTestFS(testFile{"parse.html", "{{partial}}"})
+
+	if _, err := New(testFS); err == nil {
+		t.Errorf("New() expected error, got nil")
+	}
+}
+
 func TestRender(t *testing.T) {
 	testFS := createTestFS()
 
@@ -47,7 +97,6 @@ func TestRender(t *testing.T) {
 		"Age":      40,
 	}
 
-	// view
 	var buf bytes.Buffer
 	if err := engine.Render(&buf, "view.html", data); err != nil {
 		t.Fatalf("Render() error = %v", err)
@@ -60,31 +109,7 @@ func TestRender(t *testing.T) {
 
 }
 
-func TestRender_LayoutNotFound(t *testing.T) {
-	testFS := createTestFS()
-
-	if _, err := New(testFS, WithLayout("missing.html")); err == nil {
-		t.Errorf("New() expected error, got nil")
-	}
-}
-
-func TestRender_LayoutParseError(t *testing.T) {
-	testFS := createTestFS(testFile{"layout.html", "{{partial}}"})
-
-	if _, err := New(testFS, WithLayout("layout.html")); err == nil {
-		t.Errorf("New() expected error, got nil")
-	}
-}
-
-func TestRender_ViewParseError(t *testing.T) {
-	testFS := createTestFS(testFile{"parse.html", "{{partial}}"})
-
-	if _, err := New(testFS); err == nil {
-		t.Errorf("New() expected error, got nil")
-	}
-}
-
-func TestRender_FileNotFound(t *testing.T) {
+func TestRender_ViewNotFound(t *testing.T) {
 	testFS := createTestFS()
 
 	engine, err := New(testFS)
@@ -95,5 +120,57 @@ func TestRender_FileNotFound(t *testing.T) {
 	var buf bytes.Buffer
 	if err := engine.Render(&buf, "nonexistent.html", nil); err == nil {
 		t.Errorf("Render() expected error, got nil")
+	}
+}
+
+func TestRender_PartialNotFound(t *testing.T) {
+	testFS := createTestFS(testFile{"view.html", `{{partial "invalid.html"}}`})
+
+	if _, err := New(testFS); err == nil {
+		t.Errorf("New() expected error,  got nil")
+	}
+}
+
+func TestRender_InvalidData(t *testing.T) {
+	testFS := createTestFS(testFile{"index.html", `{{.Missing}}`})
+
+	engine := Must(New(testFS))
+
+	var buf bytes.Buffer
+	if err := engine.Render(&buf, "index.html", "something"); err == nil {
+		t.Errorf("Render() expected error, got nil")
+	}
+}
+
+func TestRender_TemplateIf(t *testing.T) {
+	testFS := createTestFS(testFile{"index.html", `{{if .Name}}{{.Name}}{{end}}`})
+
+	engine := Must(New(testFS))
+
+	var buf bytes.Buffer
+	if err := engine.Render(&buf, "index.html", map[string]any{"Name": "John Doe"}); err != nil {
+		t.Errorf("Render() expected nil, got %v", err)
+	}
+}
+
+func TestRender_TemplateWith(t *testing.T) {
+	testFS := createTestFS(testFile{"index.html", `{{with .Name}}{{.}}{{end}}`})
+
+	engine := Must(New(testFS))
+
+	var buf bytes.Buffer
+	if err := engine.Render(&buf, "index.html", map[string]any{"Name": "John Doe"}); err != nil {
+		t.Errorf("Render() expected nil, got %v", err)
+	}
+}
+
+func TestRender_TemplateRange(t *testing.T) {
+	testFS := createTestFS(testFile{"index.html", `{{range .}}{{.}}{{end}}`})
+
+	engine := Must(New(testFS))
+
+	var buf bytes.Buffer
+	if err := engine.Render(&buf, "index.html", []string{"John Doe"}); err != nil {
+		t.Errorf("Render() expected nil, got %v", err)
 	}
 }

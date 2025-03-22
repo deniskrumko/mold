@@ -23,7 +23,7 @@ type Engine interface {
 	//   data: The data to be made available to both the layout and view templates during rendering.
 	//
 	// Returns:
-	//   An error, if any, that occurred during template execution or writing to the writer.
+	//   An error, if any, that occurred during template execution or while writing to the writer.
 	Render(w io.Writer, view string, data any) error
 }
 

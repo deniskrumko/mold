@@ -40,18 +40,21 @@ var ErrNotFound = errors.New("template not found")
 
 // New creates a new Layout with fs as the underlying filesystem.
 //
+// Example:
+//
 //	//go:embed web
 //	var dir embed.FS
-//	layout, err := mold.New(dir)
+//	var layout, err = mold.New(dir)
 //
 // To use a directory on the filesystem.
 //
-//	var dir os.DirFS("web")
-//	layout, err := mold.New(dir)
+//	var dir = os.DirFS("web")
+//	var layout, err = mold.New(dir)
 //
-// To specify options. e.g. custom layout
+// To specify option(s) e.g. a custom layout file.
 //
-//	layout, err := mold.New(fs, mold.WithLayout("layout.html"))
+//	option := mold.WithLayout("layout.html")
+//	layout, err := mold.New(fs, option)
 func New(fs fs.FS, options ...Option) (Layout, error) {
 	if len(options) == 0 {
 		return newLayout(fs, nil)
@@ -67,7 +70,9 @@ func New(fs fs.FS, options ...Option) (Layout, error) {
 // Must is a helper that wraps a call to a function returning ([Layout], error)
 // and panics if the error is non-nil.
 //
-//	var t = mold.Must(mold.New(fs))
+// Example:
+//
+//	layout := mold.Must(mold.New(fs))
 func Must(l Layout, err error) Layout {
 	if err != nil {
 		panic(err)
@@ -75,17 +80,35 @@ func Must(l Layout, err error) Layout {
 	return l
 }
 
-// WithRoot configures the root subdirectory.
-func WithRoot(root string) Option { return func(c *Config) { c.root = root } }
+// With is a helper for specifying multiple options.
+//
+// Example:
+//
+//	options := mold.With(
+//	    mold.WithLayout("layout.html"),
+//	    mold.WithRoot("web"),
+//	    mold.WithExt("html"),
+//	)
+//	layout := mold.New(dir, options)
+func With(opts ...Option) Option {
+	return func(c *Config) {
+		for _, opt := range opts {
+			opt(c)
+		}
+	}
+}
+
+// WithRoot configures the base directory from which template files are loaded.
+func WithRoot(subdir string) Option { return func(c *Config) { c.root = subdir } }
 
 // WithLayout configures the path to the layout file.
 func WithLayout(layout string) Option { return func(c *Config) { c.layout = layout } }
 
-// WithExts configures the filename extensions for the templates.
+// WithExt configures the filename extensions for the templates.
 // Only files with the specified extensions would be parsed.
 //
 //	Default: ["html", "gohtml", "tpl", "tmpl"]
-func WithExts(exts []string) Option { return func(c *Config) { c.exts = exts } }
+func WithExt(exts ...string) Option { return func(c *Config) { c.exts = exts } }
 
-// WithFuncMap sets custom Go template functions available for use in templates.
+// WithFuncMap configures the custom Go template functions.
 func WithFuncMap(funcMap template.FuncMap) Option { return func(c *Config) { c.funcMap = funcMap } }

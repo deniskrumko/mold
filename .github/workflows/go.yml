@@ -9,6 +9,8 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions: write-all
+
 jobs:
 
   build:
@@ -27,7 +29,7 @@ jobs:
     - name: Test
       run: go test -race -v -cover
 
-    - name: Update coverage report
+    - name: Generate coverage report
       uses: ncruces/go-coverage-report@v0
       with:
         report: true

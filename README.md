@@ -85,7 +85,7 @@ engine.Render(w, "path/to/view.html", nil)
 Sections allow content to be rendered in specific parts of the layout.
 They are defined within views with the `define` block.
 
-The default template includes the `head` section for inserting content into the `<head>` tag.
+The default template renders content in the `head` section within the `<head>` tag.
 
 ```html
 {{define "scripts"}}

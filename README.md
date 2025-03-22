@@ -39,6 +39,10 @@ func handle(w http.ResponseWriter, r *http.Request){
 
 Check the [examples](https://github.com/abiosoft/mold/tree/main/examples) directory for more.
 
+### Documentation
+
+Go package documentation is available at https://pkg.go.dev/github.com/abiosoft/mold
+
 ## Concepts
 
 ### Layouts

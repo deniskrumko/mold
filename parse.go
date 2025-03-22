@@ -35,13 +35,13 @@ func newEngine(fsys fs.FS, c *Config) (Engine, error) {
 
 	opt, err := setup(fsys, c)
 	if err != nil {
-		return nil, fmt.Errorf("error creating new layout: %w", err)
+		return nil, fmt.Errorf("error creating new engine: %w", err)
 	}
 
 	// traverse to fetch all templates and populate the root template.
 	root, ts, err := m.walk(opt.fs, opt.exts)
 	if err != nil {
-		return nil, fmt.Errorf("error creating new layout: %w", err)
+		return nil, fmt.Errorf("error creating new engine: %w", err)
 	}
 
 	// process layout
@@ -178,7 +178,7 @@ func parseLayout(root templateSet, l templateFile, funcMap template.FuncMap) (*t
 	// process template tree for layout
 	refs, err := processTree(layout, l.body, true, true)
 	if err != nil {
-		return nil, fmt.Errorf("error creating new layout: %w", err)
+		return nil, fmt.Errorf("error processing layout: %w", err)
 	}
 	for _, ref := range refs {
 		t := root[ref.name]

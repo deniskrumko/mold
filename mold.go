@@ -42,7 +42,7 @@ type Option func(*Config)
 // ErrNotFound is returned when a template is not found.
 var ErrNotFound = errors.New("template not found")
 
-// New creates a new Layout with fs as the underlying filesystem.
+// New creates a new [Engine] with fs as the underlying filesystem.
 //
 // Example:
 //

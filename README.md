@@ -57,7 +57,7 @@ To render a specific section, pass the section's name as an argument.
 </body>
 </html>
 ```
-The [default](https://github.com/abiosoft/mold/blob/main/layout.html) layout can be overriden
+The [default layout](https://github.com/abiosoft/mold/blob/main/layout.html) can be overriden
 by creating a custom layout file and specifying it as an option for a new instance.
 
 ```go
@@ -85,7 +85,8 @@ engine.Render(w, "path/to/view.html", nil)
 Sections allow content to be rendered in specific parts of the layout.
 They are defined within views with the `define` block.
 
-The default template renders content in the `head` section within the `<head>` tag.
+The [default layout](https://github.com/abiosoft/mold/blob/main/layout.html) renders content in the `head` section
+within the `<head>` tag.
 
 ```html
 {{define "scripts"}}

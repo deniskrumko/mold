@@ -1,6 +1,5 @@
 /*
-Package mold provides a flexible web page rendering engine that
-combines layouts and views for structured HTML output.
+Package mold provides a web page rendering engine that combines layouts and views for HTML output.
 
 The core component of this package is the [Engine], which manages the rendering process.
 

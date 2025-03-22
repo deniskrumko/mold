@@ -30,38 +30,43 @@ To render a specific section, pass the section's name as an argument.
 	<html>
 
 	<head>
-	    {{ render "head" }}
+	    {{render "head"}}
 	</head>
 
 	<body>
-	    {{ render }}
+	    {{render}}
 	</body>
 
 	</html>
 
 Views are templates that generate the content that is inserted into the body of layouts.
+Typically what you would put in the "<body>" tag of an HTML page.
 
-Sections can also be defined within views with the "define" block, allowing content to be rendered in specific parts
-of the layout.
+	<h3>Hello from Mold :)</h3>
 
-	{{define "head"}}
-	<link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+The path to the view file is passed to the rendering engine to produce HTML output.
+
+	engine.Render(w, "path/to/view.html", nil)
+
+Sections allow content to be rendered in specific parts of the layout.
+They are defined within views with the "define" block.
+
+The default template includes the "head" section for inserting content into the "<head>" tag.
+
+	{{define "scripts"}}
+	<script src="//unpkg.com/alpinejs" defer></script>
 	{{end}}
-
-	<h3>Hello</h3>
-
-	<p>This is a simple web page.</p>
 
 Partials are reusable template snippets that allow you to break down complex views into smaller,
 manageable components. They are supported in both views and layouts with the "partial" function.
 
 Partials are ideal for sharing common logic across multiple views and layouts.
 
-	{{ partial "path/to/partial.html" }}
+	{{partial "path/to/partial.html"}}
 
 An optional second argument allows customizing the data passed to the partial.
 By default, the view's data context is used.
 
-	{{ partial "partials/user_session.html" .User }}
+	{{partial "partials/user_session.html" .User}}
 */
 package mold

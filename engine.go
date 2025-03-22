@@ -169,14 +169,14 @@ func setup(fsys fs.FS, c *Config) (conf struct {
 	return conf, nil
 }
 
-func parseLayout(root templateSet, l templateFile, funcMap template.FuncMap) (*template.Template, error) {
-	layout, err := template.New("layout").Funcs(funcMap).Parse(l.body)
+func parseLayout(root templateSet, t templateFile, funcMap template.FuncMap) (*template.Template, error) {
+	layout, err := template.New("layout").Funcs(funcMap).Parse(t.body)
 	if err != nil {
 		return nil, err
 	}
 
 	// process template tree for layout
-	refs, err := processTree(layout, l.body, true, true)
+	refs, err := processTree(layout, t.body, true, true)
 	if err != nil {
 		return nil, fmt.Errorf("error processing layout: %w", err)
 	}

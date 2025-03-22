@@ -43,7 +43,7 @@ Layouts provide the overall structure for your web pages.
 They define the common elements that are shared across multiple views,
 such as headers, footers, navigation menus, stylesheets e.t.c.
 
-Inside a engine, calling `render` without an argument inserts the view's content into the layout's body.
+Inside a layout, calling `render` without an argument inserts the view's content into the layout's body.
 To render a specific section, pass the section's name as an argument.
 
 ```html
@@ -69,8 +69,9 @@ engine, err := mold.New(fs, option)
 
 Views are templates that generate the content that is inserted into the body of layouts.
 
-Sections can also be defined within views, allowing content to be rendered in specific parts of the layout.
-The `head` section in the default layout is a named section.
+Sections can also be defined within views with the `define` block, allowing content to be rendered in specific parts of the layout.
+
+The default template includes the `head` section.
 
 ```html
 {{define "scripts"}}
@@ -81,7 +82,9 @@ The `head` section in the default layout is a named section.
 ### Partials
 
 Partials are reusable template snippets that allow you to break down complex views into smaller, manageable components.
-Ideal for sharing common logic across multiple views and layouts.
+They are supported in both views and layouts with the `partial` function.
+
+Partials are ideal sharing common logic across multiple views and layouts.
 
 ```html
 {{ partial "path/to/partial.html" }}
@@ -94,9 +97,9 @@ By default, the view's data context is used.
 {{ partial "partials/user_session.html" .User }}
 ```
 
-## Anything wrong with standard Go templates?
+## Why not standard Go templates?
 
-Nothing! It is good at what it does.
+Yeah, why not? It excels at what it does.
 
 However, Go templates, while simple and powerful, can be unfamiliar when dealing with multiple template files.
 

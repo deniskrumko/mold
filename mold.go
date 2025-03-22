@@ -8,7 +8,7 @@ import (
 )
 
 // Engine represents a web page renderer, incorporating a specific layout.
-// It provides a flexible way to generate web pages by combining views with a
+// It provides a flexible way to generate HTML by combining views with a
 // predefined layout structure.
 //
 // The layout defines the overall page structure,

@@ -125,10 +125,6 @@ func walk(fsys fs.FS, exts []string) (root templateSet, ts []templateFile, err e
 }
 
 func setup(c *Config, options ...Option) error {
-	if c == nil {
-		return fmt.Errorf("invalid config: config is nil")
-	}
-
 	// apply options
 	for _, opt := range options {
 		opt(c)

@@ -10,10 +10,11 @@ import (
 //go:embed web
 var dir embed.FS
 
-var layout = mold.Must(mold.New(dir,
+var options = mold.With(
 	mold.WithRoot("web"),
 	mold.WithLayout("layouts/layout.html"),
-))
+)
+var layout = mold.Must(mold.New(dir, options))
 
 func main() {
 	http.Handle("/", http.HandlerFunc(handleIndex))

@@ -123,7 +123,7 @@ By default, the view's data context is used.
 
 Go templates, while simple and powerful, can be unfamiliar when dealing with multiple template files.
 
-Mold provides an intuitive and conventional higher-level usage of Go templates for dealing with multiple template files.
+Mold provides an intuitive and conventional higher-level use of Go templates for dealing with multiple template files.
 
 ## License
 

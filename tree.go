@@ -44,7 +44,6 @@ func processNode(
 			if err := processActionNode(parent, index, node, funcName); err != nil {
 				return ts, err
 			}
-			// only include template name for partials
 			if funcName == partialFunc.String() && tname != "" {
 				ts = append(ts, templateName{name: tname, typ: partialFunc})
 			} else if funcName == renderFunc.String() && tname != "" {

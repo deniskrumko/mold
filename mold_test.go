@@ -2,6 +2,7 @@ package mold
 
 import (
 	"bytes"
+	"fmt"
 	"io/fs"
 	"testing"
 	"testing/fstest"
@@ -14,8 +15,8 @@ type testFile struct {
 
 func createTestFS(extraFiles ...testFile) fs.FS {
 	mapFS := fstest.MapFS{
-		"view.html":     &fstest.MapFile{Data: []byte(`Hello, {{.Name}}!<br>{{partial "partial.html" .Location}}`)},
 		"layout.html":   &fstest.MapFile{Data: []byte(`<html><body>{{render}}<br>{{partial "partial2.html" .Age}}</body></html>`)},
+		"view.html":     &fstest.MapFile{Data: []byte(`Hello, {{.Name}}!<br>{{partial "partial.html" .Location}}`)},
 		"partial.html":  &fstest.MapFile{Data: []byte(`Location: {{.}}`)},
 		"partial2.html": &fstest.MapFile{Data: []byte(`Age: {{.}}`)},
 		"skip.txt":      &fstest.MapFile{},
@@ -83,6 +84,70 @@ func TestNew_ViewParseError(t *testing.T) {
 
 	if _, err := New(testFS); err == nil {
 		t.Errorf("New() expected error, got nil")
+	}
+}
+
+func TestNew_Ext(t *testing.T) {
+	testFS := createTestFS(
+		testFile{"layout.mine", "{{render}}"},
+		testFile{"view.mine", "Hello {{.Name}}"},
+	)
+
+	option := With(
+		WithExt(".mine"),
+		WithLayout("layout.mine"),
+	)
+	engine := Must(New(testFS, option))
+
+	data := map[string]any{
+		"Name":     "John Doe",
+		"Location": "Mars",
+		"Age":      40,
+	}
+
+	var buf bytes.Buffer
+	if err := engine.Render(&buf, "view.mine", data); err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+
+	expected := "Hello John Doe"
+	if buf.String() != expected {
+		t.Errorf("Render() got = %q, want %q", buf.String(), expected)
+	}
+}
+
+func TestNew_FuncMap(t *testing.T) {
+	testFS := createTestFS(
+		testFile{"layout.html", "{{render}}"},
+		testFile{"view.html", "Hello {{reverse .Name}}"},
+	)
+
+	funcMap := map[string]any{
+		"reverse": func(s string) (out string) {
+			for _, r := range s {
+				out = fmt.Sprintf("%c%s", r, out)
+			}
+			return
+		},
+	}
+	option := With(
+		WithLayout("layout.html"),
+		WithFuncMap(funcMap),
+	)
+	engine := Must(New(testFS, option))
+
+	data := map[string]any{
+		"Name": "John Doe",
+	}
+
+	var buf bytes.Buffer
+	if err := engine.Render(&buf, "view.html", data); err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+
+	expected := "Hello eoD nhoJ"
+	if buf.String() != expected {
+		t.Errorf("Render() got = %q, want %q", buf.String(), expected)
 	}
 }
 

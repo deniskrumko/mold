@@ -107,7 +107,7 @@ The [default layout](https://github.com/abiosoft/mold/blob/main/layout.html) is 
 Partials are reusable template snippets that allow you to break down complex views into smaller, manageable components.
 They are supported in both views and layouts with the `partial` function.
 
-Partials are ideal sharing common logic across multiple views and layouts.
+Partials are ideal for sharing common logic across multiple views and layouts.
 
 ```html
 {{partial "path/to/partial.html"}}

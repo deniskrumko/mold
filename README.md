@@ -1,6 +1,7 @@
 # Mold
 
 [![Build Status](https://github.com/abiosoft/mold/actions/workflows/go.yml/badge.svg)](https://github.com/abiosoft/mold/actions/workflows/go.yml)
+[![Test Coverage](https://codecov.io/gh/abiosoft/mold/graph/badge.svg?token=WS0044G1UZ)](https://codecov.io/gh/abiosoft/mold)
 [![Go Report Card](https://goreportcard.com/badge/github.com/abiosoft/mold)](https://goreportcard.com/report/github.com/abiosoft/mold)
 [![Package Documentation](https://pkg.go.dev/badge/github.com/abiosoft/mold)](https://pkg.go.dev/github.com/abiosoft/mold)
 

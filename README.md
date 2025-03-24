@@ -9,7 +9,7 @@ Mold builds on [Go templates](https://pkg.go.dev/text/template) to provide a sim
 
 ## Features
 
-Mold offers following, making it an ideal choice for Go projects.
+Mold offers the following, making it an ideal choice for Go projects.
 
 - **Lightweight**: relies on the Go standard lib with no external dependencies.
 - **Efficient**: utilises Go's in-build template parser under the hood.

@@ -7,6 +7,15 @@
 
 Mold builds on [Go templates](https://pkg.go.dev/text/template) to provide a simple and familiar API for rendering web pages.
 
+## Features
+
+Mold offers following features, making it an ideal choice for Go projects.
+
+- **Lightweight** - relies on the Go standard lib with no external dependencies.
+- **Efficient** - utilises Go's in-build template parser under the hood.
+- **Capable** - supports all capabilities of Go templates.
+- **Familiar** - uses the well-known [concepts](#concepts) of [Layouts](#layouts), [Views](#views) and [Partials](#partials).
+
 ## Getting Started
 
 ### 1. Create a view file

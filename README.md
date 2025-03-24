@@ -11,7 +11,7 @@ Mold builds on [Go templates](https://pkg.go.dev/text/template) to provide a sim
 
 Mold offers the following, making it an ideal choice for Go projects.
 
-- **Lightweight**: uses only the Go standard lib with no external dependencies.
+- **Lightweight**: uses only the Go standard library with no external dependencies.
 - **Efficient**: utilises Go's in-built template parser under the hood.
 - **Capable**: supports all capabilities of Go templates.
 - **Familiar**: employs the well-known [concepts](#concepts) of Layouts, Views and Partials.
@@ -121,7 +121,8 @@ By default, the view's data context is used.
 Sections allow content to be rendered in specific parts of the layout.
 They are defined within views with a `define` block.
 
-The [default layout](https://github.com/abiosoft/mold/blob/main/layout.html) is able to render HTML content within the `<head>` tag by utilising the `head` section.
+The [default layout](https://github.com/abiosoft/mold/blob/main/layout.html) is able to render HTML content within
+the `<head>` tag by utilising the `head` section.
 
 ```html
 {{define "scripts"}}
@@ -132,10 +133,9 @@ The [default layout](https://github.com/abiosoft/mold/blob/main/layout.html) is 
 
 ## Why not standard Go templates?
 
-Go templates, while simple and powerful, can feel unfamiliar when dealing with multiple template files to structure
-a web app.
+Go templates, while simple and powerful, can feel unfamiliar when dealing with multiple template files.
 
-Mold addresses this by providing an intuitive and conventional higher-level use of Go templates.
+Mold addresses this by providing an intuitive framework for structuring web applications with Go templates.
 
 ## License
 

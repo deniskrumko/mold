@@ -132,9 +132,10 @@ The [default layout](https://github.com/abiosoft/mold/blob/main/layout.html) is 
 
 ## Why not standard Go templates?
 
-Go templates, while simple and powerful, can be unfamiliar when dealing with multiple template files.
+Go templates, while simple and powerful, can feel unfamiliar when dealing with multiple template files to structure
+a web app.
 
-Mold provides an intuitive and conventional higher-level use of Go templates for dealing with multiple template files.
+Mold addresses this by providing an intuitive and conventional higher-level use of Go templates.
 
 ## License
 

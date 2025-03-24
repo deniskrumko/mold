@@ -11,10 +11,10 @@ Mold builds on [Go templates](https://pkg.go.dev/text/template) to provide a sim
 
 Mold offers the following, making it an ideal choice for Go projects.
 
-- **Lightweight**: relies on the Go standard lib with no external dependencies.
+- **Lightweight**: uses only the Go standard lib with no external dependencies.
 - **Efficient**: utilises Go's in-built template parser under the hood.
 - **Capable**: supports all capabilities of Go templates.
-- **Familiar**: uses the well-known [concepts](#concepts) of Layouts, Views and Partials.
+- **Familiar**: employs the well-known [concepts](#concepts) of Layouts, Views and Partials.
 
 ## Getting Started
 

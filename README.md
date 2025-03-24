@@ -9,12 +9,12 @@ Mold builds on [Go templates](https://pkg.go.dev/text/template) to provide a sim
 
 ## Features
 
-Mold offers following features, making it an ideal choice for Go projects.
+Mold offers following, making it an ideal choice for Go projects.
 
-- **Lightweight** - relies on the Go standard lib with no external dependencies.
-- **Efficient** - utilises Go's in-build template parser under the hood.
-- **Capable** - supports all capabilities of Go templates.
-- **Familiar** - uses the well-known [concepts](#concepts) of [Layouts](#layouts), [Views](#views) and [Partials](#partials).
+- **Lightweight**: relies on the Go standard lib with no external dependencies.
+- **Efficient**: utilises Go's in-build template parser under the hood.
+- **Capable**: supports all capabilities of Go templates.
+- **Familiar**: uses the well-known [concepts](#concepts) of Layouts, Views and Partials.
 
 ## Getting Started
 
@@ -98,19 +98,6 @@ The path to the view file is passed to the rendering engine to produce HTML outp
 engine.Render(w, "path/to/view.html", nil)
 ```
 
-### Sections
-
-Sections allow content to be rendered in specific parts of the layout.
-They are defined within views with a `define` block.
-
-The [default layout](https://github.com/abiosoft/mold/blob/main/layout.html) is able to render HTML content within the `<head>` tag by utilising the `head` section.
-
-```html
-{{define "scripts"}}
-<script src="//unpkg.com/alpinejs" defer></script>
-{{end}}
-```
-
 ### Partials
 
 Partials are reusable template snippets that allow you to break down complex views into smaller, manageable components.
@@ -128,6 +115,20 @@ By default, the view's data context is used.
 ```html
 {{partial "partials/user_session.html" .User}}
 ```
+
+### Sections
+
+Sections allow content to be rendered in specific parts of the layout.
+They are defined within views with a `define` block.
+
+The [default layout](https://github.com/abiosoft/mold/blob/main/layout.html) is able to render HTML content within the `<head>` tag by utilising the `head` section.
+
+```html
+{{define "scripts"}}
+<script src="//unpkg.com/alpinejs" defer></script>
+{{end}}
+```
+
 
 ## Why not standard Go templates?
 

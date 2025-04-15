@@ -1,9 +1,6 @@
 # Mold
 
-[![Build Status](https://github.com/abiosoft/mold/actions/workflows/go.yml/badge.svg)](https://github.com/abiosoft/mold/actions/workflows/go.yml)
-[![Test Coverage](https://codecov.io/gh/abiosoft/mold/graph/badge.svg?token=WS0044G1UZ)](https://codecov.io/gh/abiosoft/mold)
-[![Go Report Card](https://goreportcard.com/badge/github.com/abiosoft/mold)](https://goreportcard.com/report/github.com/abiosoft/mold)
-[![Package Documentation](https://pkg.go.dev/badge/github.com/abiosoft/mold)](https://pkg.go.dev/github.com/abiosoft/mold)
+Fork of https://github.com/abiosoft/mold to use different Go version.
 
 Mold builds on [Go templates](https://pkg.go.dev/text/template) to provide a simple and familiar API for rendering web pages.
 
@@ -27,7 +24,7 @@ Create an HTML file named `index.html`.
 <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
 {{end}}
 
-<h1>Hello from a <a href="//github.com/abiosoft/mold">Mold</a> template</h1>
+<h1>Hello from a <a href="//github.com/deniskrumko/mold">Mold</a> template</h1>
 ```
 
 ### 2. Render
@@ -47,11 +44,11 @@ func handle(w http.ResponseWriter, r *http.Request){
 
 ### Examples
 
-Check the [examples](https://github.com/abiosoft/mold/tree/main/examples) directory for more.
+Check the [examples](https://github.com/deniskrumko/mold/tree/main/examples) directory for more.
 
 ### Documentation
 
-Go package documentation is available at https://pkg.go.dev/github.com/abiosoft/mold
+Go package documentation is available at https://pkg.go.dev/github.com/deniskrumko/mold
 
 ## Concepts
 
@@ -75,7 +72,7 @@ To render a specific section, pass the section's name as an argument.
 </body>
 </html>
 ```
-The [default layout](https://github.com/abiosoft/mold/blob/main/layout.html) can be overridden
+The [default layout](https://github.com/deniskrumko/mold/blob/main/layout.html) can be overridden
 by creating a custom layout file and specifying it as an option for a new instance.
 
 ```go
@@ -121,7 +118,7 @@ By default, the view's data context is used.
 Sections allow content to be rendered in specific parts of the layout.
 They are defined within views with a `define` block.
 
-The [default layout](https://github.com/abiosoft/mold/blob/main/layout.html) is able to render HTML content within
+The [default layout](https://github.com/deniskrumko/mold/blob/main/layout.html) is able to render HTML content within
 the `<head>` tag by utilising the `head` section.
 
 ```html

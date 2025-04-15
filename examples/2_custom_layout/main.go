@@ -4,7 +4,7 @@ import (
 	"embed"
 	"net/http"
 
-	"github.com/abiosoft/mold"
+	"github.com/deniskrumko/mold"
 )
 
 //go:embed web

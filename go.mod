@@ -1,3 +1,3 @@
-module github.com/abiosoft/mold
+module github.com/deniskrumko/mold
 
-go 1.23.4
+go 1.23

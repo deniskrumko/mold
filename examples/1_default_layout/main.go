@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/abiosoft/mold"
+	"github.com/deniskrumko/mold"
 )
 
 //go:embed *.html partials
